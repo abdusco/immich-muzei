@@ -104,6 +104,9 @@ class ImmichSettingsViewModel(application: Application) : AndroidViewModel(appli
         }
         Log.d(TAG, "Toggling album $id, new selection size: ${newSelection.size}")
         prefs.updateSelectedAlbums(newSelection)
+
+        // Clear cached photos when album selection changes
+        clearPhotos()
     }
 
     fun toggleTag(id: String) {
@@ -115,12 +118,18 @@ class ImmichSettingsViewModel(application: Application) : AndroidViewModel(appli
 
         // Update preferences which will trigger config flow
         prefs.updateSelectedTags(newSelection)
+
+        // Clear cached photos when tag selection changes
+        clearPhotos()
     }
 
     fun toggleFavoritesOnly() {
         val newValue = !_state.value.config.favoritesOnly
         Log.d(TAG, "Toggling favorites only: $newValue")
         prefs.updateFavoritesOnly(newValue)
+
+        // Clear cached photos when favorites filter changes
+        clearPhotos()
     }
 
     fun setSortBy(sortBy: dev.abdus.apps.immich.data.AlbumSortBy) {
