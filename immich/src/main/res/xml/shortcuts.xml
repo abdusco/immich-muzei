@@ -3,7 +3,7 @@
     <shortcut
         android:shortcutId="immich_favorite"
         android:enabled="true"
-        android:icon="@android:drawable/star_big_on"
+        android:icon="@drawable/fav"
         android:shortcutShortLabel="@string/immich_shortcut_favorite_label"
         android:shortcutLongLabel="@string/immich_shortcut_favorite_label">
         <intent

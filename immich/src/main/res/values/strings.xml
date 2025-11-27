@@ -25,6 +25,6 @@
         <item quantity="other">%d photos loaded</item>
     </plurals>
     <string name="immich_description_empty">No photos loaded</string>
-    <string name="immich_shortcut_favorite_label">Favorite wallpaper</string>
+    <string name="immich_shortcut_favorite_label">Add to favorites</string>
 </resources>
 
