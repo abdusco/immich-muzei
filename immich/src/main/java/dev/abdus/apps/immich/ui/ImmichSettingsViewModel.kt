@@ -71,6 +71,13 @@ class ImmichSettingsViewModel(application: Application) : AndroidViewModel(appli
     }
 
     /**
+     * Reload cached data from preferences. Called when returning from picker screens.
+     */
+    fun reloadCachedData() {
+        loadCachedData()
+    }
+
+    /**
      * Refresh albums and tags from API. Called explicitly by picker screens.
      */
     fun refreshFromApi() {

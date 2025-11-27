@@ -30,7 +30,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -41,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,7 +63,6 @@ fun ImmichSettingsScreen(
     ImmichContent(
         state = state,
         imageLoader = imageLoader,
-        onSaveCredentials = viewModel::updateCredentials,
         onChangeAlbum = {
             context.startActivity(android.content.Intent(context, AlbumPickerActivity::class.java))
         },
@@ -87,7 +84,6 @@ fun ImmichSettingsScreen(
 private fun ImmichContent(
     state: ImmichUiState,
     imageLoader: coil3.ImageLoader,
-    onSaveCredentials: (String, String) -> Unit,
     onChangeAlbum: () -> Unit,
     onRemoveAlbum: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
@@ -97,7 +93,10 @@ private fun ImmichContent(
     onToggleFavoritesOnly: () -> Unit
 ) {
     when {
-        !state.config.isConfigured -> ImmichEmptyConfig(onSaveCredentials)
+        !state.config.isConfigured -> {
+            // Show empty state with button to launch ConfigActivity
+            ImmichEmptyState()
+        }
         else -> {
             var menuExpanded by remember { mutableStateOf(false) }
 
@@ -162,9 +161,9 @@ private fun ImmichContent(
 }
 
 @Composable
-private fun ImmichEmptyConfig(onSaveCredentials: (String, String) -> Unit) {
-    val (server, setServer) = remember { mutableStateOf("") }
-    val (apiKey, setApiKey) = remember { mutableStateOf("") }
+private fun ImmichEmptyState() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -173,28 +172,24 @@ private fun ImmichEmptyConfig(onSaveCredentials: (String, String) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Connect Immich",
+            text = "Connect to Immich",
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(
-            value = server,
-            onValueChange = setServer,
-            label = { Text("Server URL") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = apiKey,
-            onValueChange = setApiKey,
-            label = { Text("API Key") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation()
+        Text(
+            text = "Configure your server settings to get started",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { onSaveCredentials(server, apiKey) }) {
-            Text("Save & Connect")
+        Button(
+            onClick = {
+                context.startActivity(android.content.Intent(context, ConfigActivity::class.java))
+            }
+        ) {
+            Text("Configure Settings")
         }
     }
 }
