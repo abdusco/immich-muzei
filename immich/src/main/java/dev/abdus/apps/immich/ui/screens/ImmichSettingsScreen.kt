@@ -60,9 +60,31 @@ fun ImmichSettingsScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val imageLoader = remember(context) { ImmichImageLoader.create(context) }
 
+    // Check if Immich is the active Muzei source
+    val isImmichActive = remember { mutableStateOf(true) }
+
+    // Re-check whenever this composable becomes active (including after returning from Muzei)
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                isImmichActive.value = viewModel.isImmichActiveSource()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        // Initial check
+        isImmichActive.value = viewModel.isImmichActiveSource()
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     ImmichContent(
         state = state,
         imageLoader = imageLoader,
+        isImmichActive = isImmichActive.value,
         onChangeAlbum = {
             context.startActivity(android.content.Intent(context, AlbumPickerActivity::class.java))
         },
@@ -90,7 +112,8 @@ private fun ImmichContent(
     onAddTags: () -> Unit,
     onEditConfig: () -> Unit,
     onClearPhotos: () -> Unit,
-    onToggleFavoritesOnly: () -> Unit
+    onToggleFavoritesOnly: () -> Unit,
+    isImmichActive: Boolean
 ) {
     when {
         !state.config.isConfigured -> {
@@ -152,7 +175,8 @@ private fun ImmichContent(
                         onRemoveTag = onRemoveTag,
                         onAddTags = onAddTags,
                         onToggleFavoritesOnly = onToggleFavoritesOnly,
-                        paddingValues = paddingValues
+                        paddingValues = paddingValues,
+                        isImmichActive = isImmichActive
                     )
                 }
             }
@@ -210,7 +234,8 @@ private fun SelectedItemsView(
     onRemoveTag: (String) -> Unit,
     onAddTags: () -> Unit,
     onToggleFavoritesOnly: () -> Unit,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    isImmichActive: Boolean
 ) {
     val selectedAlbums = state.albums.filter { album ->
         album.id in state.config.selectedAlbumIds
@@ -220,6 +245,8 @@ private fun SelectedItemsView(
         state.config.selectedTagIds.contains(tag.id)
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -227,6 +254,62 @@ private fun SelectedItemsView(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Muzei Source Warning Banner (show at top if not active)
+        if (!isImmichActive) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Immich is not your active wallpaper source",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                        Text(
+                            text = "Change your Muzei source to Immich to see photos from your library",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                        Button(
+                            onClick = {
+                                try {
+                                    // Open Muzei's source chooser
+                                    val intent = android.content.Intent().apply {
+                                        action = "com.google.android.apps.muzei.ACTION_CHOOSE_PROVIDER"
+                                        setPackage("net.nurik.roman.muzei")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    // Fallback: try opening Muzei app
+                                    try {
+                                        val intent = context.packageManager.getLaunchIntentForPackage("net.nurik.roman.muzei")
+                                        if (intent != null) {
+                                            context.startActivity(intent)
+                                        }
+                                    } catch (e2: Exception) {
+                                        android.util.Log.e("ImmichSettings", "Could not open Muzei", e2)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Change Source")
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             state.errorMessage?.let {
                 Card(
@@ -483,8 +566,6 @@ private fun SelectedAlbumRow(
         }
     }
 }
-
-
 
 
 

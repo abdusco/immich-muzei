@@ -247,4 +247,34 @@ class ImmichSettingsViewModel(application: Application) : AndroidViewModel(appli
             "Error: ${e.message ?: e.javaClass.simpleName}\n\n${e.stackTraceToString()}"
         }
     }
+
+    /**
+     * Check if Immich is currently the active Muzei source.
+     * Returns true if Immich is active, false otherwise.
+     */
+    fun isImmichActiveSource(): Boolean {
+        return try {
+            val context = getApplication<Application>()
+            context.contentResolver.query(
+                com.google.android.apps.muzei.api.MuzeiContract.Artwork.CONTENT_URI,
+                null,
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val artwork = com.google.android.apps.muzei.api.Artwork.fromCursor(cursor)
+                    val isImmich = artwork.providerAuthority == dev.abdus.apps.immich.BuildConfig.IMMICH_AUTHORITY
+                    Log.d(TAG, "Current Muzei source: ${artwork.providerAuthority}, isImmich: $isImmich")
+                    isImmich
+                } else {
+                    Log.d(TAG, "No current Muzei artwork")
+                    false
+                }
+            } ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking Muzei source", e)
+            false
+        }
+    }
 }
