@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="immich_favorite"
+        android:enabled="true"
+        android:icon="@android:drawable/star_big_on"
+        android:shortcutShortLabel="@string/immich_shortcut_favorite_label"
+        android:shortcutLongLabel="@string/immich_shortcut_favorite_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="dev.abdus.apps.immich"
+            android:targetClass="dev.abdus.apps.immich.shortcuts.FavoriteShortcutActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>
+

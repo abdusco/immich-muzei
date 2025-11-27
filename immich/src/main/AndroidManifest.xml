@@ -1,0 +1,103 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/source_ic_launcher"
+        android:label="@string/app_name">
+
+        <activity
+            android:name="dev.abdus.apps.immich.ui.ImmichSettingsActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Static shortcuts for long-press app icon -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <activity
+            android:name="dev.abdus.apps.immich.ui.AlbumPickerActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:parentActivityName="dev.abdus.apps.immich.ui.ImmichSettingsActivity" />
+
+        <activity
+            android:name="dev.abdus.apps.immich.ui.TagPickerActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:parentActivityName="dev.abdus.apps.immich.ui.ImmichSettingsActivity" />
+
+        <activity
+            android:name="dev.abdus.apps.immich.ui.ConfigActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:parentActivityName="dev.abdus.apps.immich.ui.ImmichSettingsActivity" />
+
+        <activity
+            android:name="dev.abdus.apps.immich.shortcuts.FavoriteShortcutActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Invisible"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="dev.abdus.apps.immich.shortcuts.ToastActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Invisible"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:launchMode="singleInstance" />
+
+        <receiver
+            android:name="dev.abdus.apps.immich.shortcuts.FavoriteShortcutReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="dev.abdus.apps.immich.ACTION_FAVORITE_CURRENT" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="dev.abdus.apps.immich.provider.ImmichArtProvider$FavoriteReceiver"
+            android:exported="false" />
+
+        <provider
+            android:name="dev.abdus.apps.immich.provider.ImmichArtProvider"
+            android:authorities="${immichAuthority}"
+            android:description="@string/description"
+            android:exported="true"
+            android:label="@string/name"
+            android:permission="com.google.android.apps.muzei.api.ACCESS_PROVIDER">
+            <intent-filter>
+                <action android:name="com.google.android.apps.muzei.api.MuzeiArtProvider" />
+            </intent-filter>
+        </provider>
+
+        <provider
+            android:name="com.google.android.apps.muzei.api.provider.MuzeiArtDocumentsProvider"
+            android:authorities="${immichAuthority}.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
+    </application>
+
+</manifest>
