@@ -42,22 +42,22 @@ To build with a specific version:
 
 Releases are automated via GitHub Actions. To create a release:
 
-**Method 1: Create tag first (recommended)**
+**Option 1: Create tag first (recommended)**
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
 Then create a release on GitHub using that tag.
 
-**Method 2: Create from GitHub**
-Create a release on GitHub and specify a tag name (e.g., `v1.0.0`). GitHub will create the tag when you publish.
+**Option 2: Create directly from GitHub**
+Create a release (draft or published) on GitHub and specify a tag name (e.g., `v1.0.0`).
 
-When you **publish** the release, GitHub Actions will:
+When you **create** the release (even as a draft), GitHub Actions will:
 - Automatically build the APK with the version from the tag
 - Attach the APK to the release as `immich-{version}.apk`
 - The version code is automatically set to the GitHub run number
 
-**Note:** The workflow triggers when you **publish** a release, not when you create a draft.
+You can then review the APK in the draft and publish when ready.
 
 ## Project Structure
 
