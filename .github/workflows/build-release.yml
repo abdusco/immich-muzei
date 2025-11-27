@@ -11,6 +11,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if tag exists
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG_NAME does not exist. Please create the tag first."
+            exit 1
+          fi
+          echo "Tag $TAG_NAME exists, proceeding with build..."
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
