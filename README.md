@@ -13,7 +13,6 @@ A [Muzei](https://muzei.co/) plugin that displays photos from your [Immich](http
 - "Add to favorites" action within Muzei UI
 - **🆕 Home screen shortcut** to favorite the current wallpaper with one tap (Android 7.1+)
 
-asd
 ## Building
 
 To build the debug APK:
@@ -32,6 +31,23 @@ To build the release APK:
 ```bash
 ./gradlew immich:assembleRelease
 ```
+
+To build with a specific version:
+
+```bash
+./gradlew immich:assembleRelease -Pversion.name=1.0.0 -Pversion.code=1
+```
+
+## Releases
+
+Releases are automated via GitHub Actions. When you create a release on GitHub:
+
+1. Tag your release with a version (e.g., `v1.0.0`)
+2. Create a release (draft or published) with that tag
+3. GitHub Actions will automatically build the APK with the version from the tag
+4. The APK will be attached to the release as `immich-{version}.apk`
+
+The version code is automatically set to the GitHub run number.
 
 ## Project Structure
 

@@ -20,8 +20,8 @@ android {
         applicationId 'dev.abdus.apps.immich'
         minSdkVersion 23
         targetSdkVersion libs.versions.targetSdk.get()
-        versionCode 1
-        versionName '1.0.0'
+        versionCode project.hasProperty('version.code') ? project.property('version.code').toInteger() : 1
+        versionName project.hasProperty('version.name') ? project.property('version.name') : '1.0.0'
 
         def authorityValue = "dev.abdus.apps.immich"
         manifestPlaceholders = [immichAuthority: authorityValue]
