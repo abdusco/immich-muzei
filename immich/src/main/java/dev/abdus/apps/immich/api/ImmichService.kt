@@ -94,7 +94,7 @@ data class ImmichAsset(
     val ownerId: String? = null,
     val resized: Boolean? = null,
     val originalPath: String,
-    val deviceAssetId: String? = null
+    val fileCreatedAt: String? = null
 )
 
 private class ApiKeyInterceptor(

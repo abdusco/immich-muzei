@@ -88,11 +88,19 @@ class ImmichArtProvider : MuzeiArtProvider() {
                 val imageUrl = buildAssetUrl(config.serverUrl!!, asset.id, config.apiKey!!)
                 Log.d(TAG, "Built image URL: $imageUrl")
 
+                val byline = asset.fileCreatedAt?.let { raw ->
+                    // Extract YYYY-MM-DD from various ISO-like timestamps safely without java.time
+                    val match = Regex("^(\\d{4}-\\d{2}-\\d{2})").find(raw)
+                    match?.groupValues?.getOrNull(1) ?: run {
+                        if (raw.length >= 10) raw.substring(0, 10) else null
+                    }
+                }
+
                 addArtwork(
                     Artwork(
                         token = asset.id,
                         title = asset.originalFileName,
-                        byline = asset.ownerId,
+                        byline = byline,
                         persistentUri = imageUrl.toUri(),
                         webUri = imageUrl.toUri()
                     )
