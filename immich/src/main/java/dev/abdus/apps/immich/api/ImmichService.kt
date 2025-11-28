@@ -73,7 +73,9 @@ data class ImmichAlbum(
     val id: String,
     val albumName: String,
     val albumThumbnailAssetId: String?,
-    val assetCount: Int
+    val assetCount: Int,
+    val updatedAt: String? = null,
+    val lastModifiedAssetTimestamp: String? = null
 )
 
 @Serializable

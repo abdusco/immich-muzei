@@ -105,7 +105,8 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
         val sorted = when (_state.value.sortBy) {
             AlbumSortBy.NAME -> _state.value.albums.sortedBy { it.title }
             AlbumSortBy.ASSET_COUNT -> _state.value.albums.sortedBy { it.assetCount }
-            AlbumSortBy.UPDATED_AT -> _state.value.albums // Keep original order (from API)
+            AlbumSortBy.UPDATED_AT -> _state.value.albums.sortedBy { it.updatedAt ?: "" }
+            AlbumSortBy.MOST_RECENT_PHOTO -> _state.value.albums.sortedBy { it.lastModifiedAssetTimestamp ?: "" }
         }
         _state.value = _state.value.copy(
             albums = if (_state.value.sortReversed) sorted.reversed() else sorted

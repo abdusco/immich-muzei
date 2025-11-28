@@ -7,6 +7,8 @@ data class ImmichAlbumUiModel(
     val id: String,
     val title: String,
     val coverUrl: String?,
-    val assetCount: Int
+    val assetCount: Int,
+    val updatedAt: String? = null,
+    val lastModifiedAssetTimestamp: String? = null
 )
 

@@ -13,6 +13,7 @@ data class ImmichUiState(
 enum class AlbumSortBy {
     NAME,
     UPDATED_AT,
-    ASSET_COUNT
+    ASSET_COUNT,
+    MOST_RECENT_PHOTO
 }
 

@@ -263,6 +263,7 @@ private fun AlbumSortControls(
                         AlbumSortBy.NAME -> "Name"
                         AlbumSortBy.ASSET_COUNT -> "Count"
                         AlbumSortBy.UPDATED_AT -> "Updated"
+                        AlbumSortBy.MOST_RECENT_PHOTO -> "Most Recent Photo"
                     })
                 }
                 DropdownMenu(
@@ -287,6 +288,13 @@ private fun AlbumSortControls(
                         text = { Text("Updated At") },
                         onClick = {
                             onSortByChange(AlbumSortBy.UPDATED_AT)
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Most Recent Photo") },
+                        onClick = {
+                            onSortByChange(AlbumSortBy.MOST_RECENT_PHOTO)
                             expanded = false
                         }
                     )

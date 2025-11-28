@@ -13,7 +13,9 @@ object ImmichAlbumMapper {
             id = album.id,
             title = album.albumName,
             coverUrl = cover,
-            assetCount = album.assetCount
+            assetCount = album.assetCount,
+            updatedAt = album.updatedAt,
+            lastModifiedAssetTimestamp = album.lastModifiedAssetTimestamp
         )
     }
 }
