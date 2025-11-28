@@ -20,11 +20,6 @@
     <string name="immich_action_settings">Settings</string>
     <string name="immich_label_favorites_only">Favorites only</string>
     <string name="immich_hint_favorites_only">Show only favorited photos</string>
-    <plurals name="immich_description_template">
-        <item quantity="one">%d photo loaded</item>
-        <item quantity="other">%d photos loaded</item>
-    </plurals>
-    <string name="immich_description_empty">No photos loaded</string>
     <string name="immich_shortcut_favorite_label">Add to favorites</string>
 </resources>
 

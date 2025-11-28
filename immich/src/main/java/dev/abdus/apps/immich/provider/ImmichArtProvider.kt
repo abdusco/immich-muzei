@@ -39,7 +39,6 @@ class ImmichArtProvider : MuzeiArtProvider() {
         }
         val prefs = ImmichPreferences(context)
         val config = prefs.current()
-        Log.d(TAG, "Config: isConfigured=${config.isConfigured}, selectedAlbum=${config.selectedAlbumId}")
 
         if (!config.isConfigured) {
             Log.w(TAG, "Not configured")
@@ -110,17 +109,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
     @SuppressLint("Recycle")
     override fun getDescription(): String {
         val context = context ?: return super.getDescription()
-        query(contentUri, arrayOf(), null, null, null).use { cursor ->
-            val numImages = cursor.count
-            return if (numImages == 0) {
-                context.getString(R.string.immich_description_empty)
-            } else {
-                context.resources.getQuantityString(
-                    R.plurals.immich_description_template,
-                    numImages, numImages
-                )
-            }
-        }
+        return context.getString(R.string.description)
     }
 
     override fun getCommandActions(artwork: Artwork): List<RemoteActionCompat> {

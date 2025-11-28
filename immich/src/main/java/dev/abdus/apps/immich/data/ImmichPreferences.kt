@@ -158,10 +158,6 @@ data class ImmichConfig(
             val withApi = if (base.endsWith("/api")) base else "$base/api"
             if (withApi.endsWith('/')) withApi else "$withApi/"
         }
-
-    // Helper for backward compatibility
-    @Deprecated("Use selectedAlbumIds instead")
-    val selectedAlbumId: String? get() = selectedAlbumIds.firstOrNull()
 }
 
 private fun SharedPreferences.onChangeFlow(): Flow<Unit> = callbackFlow {
