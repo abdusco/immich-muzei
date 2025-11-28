@@ -2,6 +2,7 @@ package dev.abdus.apps.immich.provider
 
 import android.content.Context
 import android.util.Log
+import com.google.android.apps.muzei.api.isSelected
 import com.google.android.apps.muzei.api.provider.ProviderContract
 import dev.abdus.apps.immich.BuildConfig
 
@@ -37,9 +38,8 @@ class MuzeiProvider(private val context: Context) {
     fun isImmichActiveSource(): Boolean {
         return try {
             val client = ProviderContract.getProviderClient(context, BuildConfig.IMMICH_AUTHORITY)
-            val lastArtwork = client.lastAddedArtwork
-            val isActive = lastArtwork != null
-            Log.d(TAG, "Immich provider active: $isActive")
+            val isActive = client.isSelected(context)
+            Log.d(TAG, "Immich provider selected: $isActive")
             isActive
         } catch (e: Exception) {
             Log.e(TAG, "Error checking Muzei source", e)
