@@ -44,12 +44,12 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.AlbumSortBy
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
-import dev.abdus.apps.immich.data.ImmichUiState
+import dev.abdus.apps.immich.ui.AlbumPickerUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumPickerScreen(
-    state: ImmichUiState,
+    state: AlbumPickerUiState,
     imageLoader: coil3.ImageLoader,
     onAlbumClick: (String) -> Unit,
     onSortByChange: (AlbumSortBy) -> Unit,

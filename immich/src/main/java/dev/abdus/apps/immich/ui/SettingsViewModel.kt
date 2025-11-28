@@ -5,12 +5,9 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichService
-import dev.abdus.apps.immich.data.ImmichAlbumMapper
-import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.ImmichPreferences
-import dev.abdus.apps.immich.data.ImmichRepository
 import dev.abdus.apps.immich.data.ImmichUiState
-import kotlinx.coroutines.Job
+import dev.abdus.apps.immich.provider.MuzeiProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -18,12 +15,10 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = ImmichPreferences(application)
-    private val repository = ImmichRepository()
+    private val muzeiProvider = MuzeiProvider(application)
 
     private val _state = MutableStateFlow(ImmichUiState())
     val state: StateFlow<ImmichUiState> = _state
-
-    private var loadJob: Job? = null
 
     companion object {
         private const val TAG = "ImmichSettingsVM"
@@ -40,8 +35,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val oldConfig = _state.value.config
                 _state.value = _state.value.copy(config = config)
 
-                // Don't automatically load from API - let the picker screens handle that
-                // Only clear cached data if credentials changed
+                // Clear cached data if credentials changed
                 if (config.serverUrl != oldConfig.serverUrl || config.apiKey != oldConfig.apiKey) {
                     if (!config.isConfigured) {
                         _state.value = _state.value.copy(
@@ -62,7 +56,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             albums = cachedAlbums,
             tags = cachedTags
         )
-        applySorting()
     }
 
     /**
@@ -72,24 +65,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         loadCachedData()
     }
 
-    /**
-     * Refresh albums and tags from API. Called explicitly by picker screens.
-     */
-    fun refreshFromApi() {
-        val config = _state.value.config
-        if (!config.isConfigured) return
-        loadAlbumsAndTags(config)
-    }
-
     fun updateCredentials(serverUrl: String, apiKey: String) {
         Log.d(TAG, "Updating credentials: serverUrl=$serverUrl")
         prefs.updateServer(serverUrl, apiKey)
-    }
-
-    @Deprecated("Use toggleAlbum for multi-select")
-    fun selectAlbum(id: String?) {
-        Log.d(TAG, "Selecting album: $id")
-        prefs.updateSelectedAlbum(id)
     }
 
     fun toggleAlbum(id: String) {
@@ -99,8 +77,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
         Log.d(TAG, "Toggling album $id, new selection size: ${newSelection.size}")
         prefs.updateSelectedAlbums(newSelection)
-
-        // Clear cached photos when album selection changes
         clearPhotos()
     }
 
@@ -110,11 +86,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             if (!add(id)) remove(id)
         }
         Log.d(TAG, "Toggling tag $id, new selection size: ${newSelection.size}")
-
-        // Update preferences which will trigger config flow
         prefs.updateSelectedTags(newSelection)
-
-        // Clear cached photos when tag selection changes
         clearPhotos()
     }
 
@@ -122,98 +94,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val newValue = !_state.value.config.favoritesOnly
         Log.d(TAG, "Toggling favorites only: $newValue")
         prefs.updateFavoritesOnly(newValue)
-
-        // Clear cached photos when favorites filter changes
         clearPhotos()
-    }
-
-    fun setSortBy(sortBy: dev.abdus.apps.immich.data.AlbumSortBy) {
-        _state.value = _state.value.copy(sortBy = sortBy)
-        applySorting()
-    }
-
-    fun toggleSortReversed() {
-        _state.value = _state.value.copy(sortReversed = !_state.value.sortReversed)
-        applySorting()
     }
 
     fun clearPhotos() {
         Log.d(TAG, "Clearing all photos")
         viewModelScope.launch {
-            try {
-                val context = getApplication<Application>()
-                val contentUri = com.google.android.apps.muzei.api.provider.ProviderContract.getContentUri(
-                    dev.abdus.apps.immich.BuildConfig.IMMICH_AUTHORITY
-                )
-                val deletedCount = context.contentResolver.delete(contentUri, null, null)
-                Log.d(TAG, "Deleted $deletedCount photos")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error clearing photos", e)
-            }
-        }
-    }
-
-    private fun applySorting() {
-        val sorted = when (_state.value.sortBy) {
-            dev.abdus.apps.immich.data.AlbumSortBy.NAME -> _state.value.albums.sortedBy { it.title }
-            dev.abdus.apps.immich.data.AlbumSortBy.ASSET_COUNT -> _state.value.albums.sortedBy { it.assetCount }
-            dev.abdus.apps.immich.data.AlbumSortBy.UPDATED_AT -> _state.value.albums // Keep original order (from API)
-        }
-        _state.value = _state.value.copy(
-            albums = if (_state.value.sortReversed) sorted.reversed() else sorted
-        )
-    }
-
-    private fun loadAlbumsAndTags(config: ImmichConfig) {
-        if (!config.isConfigured) return
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-            try {
-                Log.d(TAG, "Loading albums and tags from ${config.apiBaseUrl}")
-                val service = ImmichService.create(
-                    baseUrl = checkNotNull(config.apiBaseUrl),
-                    apiKey = config.apiKey!!
-                )
-
-                // Fetch albums
-                val albums = repository.fetchAlbums(service)
-                Log.d(TAG, "Fetched ${albums.size} albums")
-                val uiAlbums = albums.map { album ->
-                    val mapped = ImmichAlbumMapper.toUiModel(album, config.serverUrl!!, config.apiKey!!)
-                    Log.d(TAG, "Album: ${album.albumName}, coverUrl=${mapped.coverUrl}")
-                    mapped
-                }
-
-                // Fetch tags
-                val tags = repository.fetchTags(service)
-                Log.d(TAG, "Fetched ${tags.size} tags")
-                val uiTags = tags.map { tag ->
-                    dev.abdus.apps.immich.data.ImmichTagUiModel(
-                        id = tag.id,
-                        name = tag.name
-                    )
-                }
-
-                // Cache the fetched data
-                prefs.saveCachedAlbums(uiAlbums)
-                prefs.saveCachedTags(uiTags)
-                Log.d(TAG, "Cached ${uiAlbums.size} albums and ${uiTags.size} tags")
-
-                _state.value = _state.value.copy(
-                    albums = uiAlbums,
-                    tags = uiTags,
-                    isLoading = false,
-                    errorMessage = null
-                )
-                applySorting()
-            } catch (t: Throwable) {
-                Log.e(TAG, "Error loading albums and tags", t)
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    errorMessage = t.message
-                )
-            }
+            muzeiProvider.clearPhotos()
         }
     }
 
@@ -248,28 +135,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Returns true if Immich is active, false otherwise.
      */
     fun isImmichActiveSource(): Boolean {
-        return try {
-            val context = getApplication<Application>()
-            context.contentResolver.query(
-                com.google.android.apps.muzei.api.MuzeiContract.Artwork.CONTENT_URI,
-                null,
-                null,
-                null,
-                null
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val artwork = com.google.android.apps.muzei.api.Artwork.fromCursor(cursor)
-                    val isImmich = artwork.providerAuthority == dev.abdus.apps.immich.BuildConfig.IMMICH_AUTHORITY
-                    Log.d(TAG, "Current Muzei source: ${artwork.providerAuthority}, isImmich: $isImmich")
-                    isImmich
-                } else {
-                    Log.d(TAG, "No current Muzei artwork")
-                    false
-                }
-            } ?: false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking Muzei source", e)
-            false
-        }
+        return muzeiProvider.isImmichActiveSource()
     }
 }

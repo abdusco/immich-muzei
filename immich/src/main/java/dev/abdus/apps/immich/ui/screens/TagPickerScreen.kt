@@ -33,12 +33,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.abdus.apps.immich.data.ImmichTagUiModel
-import dev.abdus.apps.immich.data.ImmichUiState
+import dev.abdus.apps.immich.ui.TagPickerUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TagPickerScreen(
-    state: ImmichUiState,
+    state: TagPickerUiState,
     onTagClick: (String) -> Unit,
     onRefresh: () -> Unit,
     onBack: () -> Unit
