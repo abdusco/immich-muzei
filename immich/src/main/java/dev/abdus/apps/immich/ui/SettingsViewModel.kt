@@ -4,10 +4,6 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import coil3.ImageLoader
-import coil3.request.CachePolicy
-import coil3.request.crossfade
-import coil3.util.DebugLogger
 import dev.abdus.apps.immich.api.ImmichService
 import dev.abdus.apps.immich.data.ImmichAlbumMapper
 import dev.abdus.apps.immich.data.ImmichConfig
@@ -19,9 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
 
-class ImmichSettingsViewModel(application: Application) : AndroidViewModel(application) {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = ImmichPreferences(application)
     private val repository = ImmichRepository()
 

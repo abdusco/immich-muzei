@@ -8,7 +8,7 @@
         android:label="@string/app_name">
 
         <activity
-            android:name="dev.abdus.apps.immich.ui.ImmichSettingsActivity"
+            android:name="dev.abdus.apps.immich.ui.SettingsActivity"
             android:exported="true"
             android:theme="@android:style/Theme.Material.NoActionBar">
             <intent-filter>
@@ -26,19 +26,19 @@
             android:name="dev.abdus.apps.immich.ui.AlbumPickerActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Material.NoActionBar"
-            android:parentActivityName="dev.abdus.apps.immich.ui.ImmichSettingsActivity" />
+            android:parentActivityName="dev.abdus.apps.immich.ui.SettingsActivity" />
 
         <activity
             android:name="dev.abdus.apps.immich.ui.TagPickerActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Material.NoActionBar"
-            android:parentActivityName="dev.abdus.apps.immich.ui.ImmichSettingsActivity" />
+            android:parentActivityName="dev.abdus.apps.immich.ui.SettingsActivity" />
 
         <activity
             android:name="dev.abdus.apps.immich.ui.ConfigActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Material.NoActionBar"
-            android:parentActivityName="dev.abdus.apps.immich.ui.ImmichSettingsActivity" />
+            android:parentActivityName="dev.abdus.apps.immich.ui.SettingsActivity" />
 
         <activity
             android:name="dev.abdus.apps.immich.shortcuts.FavoriteShortcutActivity"

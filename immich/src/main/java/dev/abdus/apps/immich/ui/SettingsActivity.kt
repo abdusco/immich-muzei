@@ -8,8 +8,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import dev.abdus.apps.immich.ui.screens.ImmichSettingsScreen
 
-class ImmichSettingsActivity : ComponentActivity() {
-    private val viewModel: ImmichSettingsViewModel by viewModels()
+class SettingsActivity : ComponentActivity() {
+    private val viewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

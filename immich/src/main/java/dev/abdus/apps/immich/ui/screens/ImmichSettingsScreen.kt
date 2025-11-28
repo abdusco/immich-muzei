@@ -49,12 +49,12 @@ import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.ui.AlbumPickerActivity
 import dev.abdus.apps.immich.ui.ConfigActivity
 import dev.abdus.apps.immich.ui.ImmichImageLoader
-import dev.abdus.apps.immich.ui.ImmichSettingsViewModel
+import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
 
 @Composable
 fun ImmichSettingsScreen(
-    viewModel: ImmichSettingsViewModel
+    viewModel: SettingsViewModel
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current

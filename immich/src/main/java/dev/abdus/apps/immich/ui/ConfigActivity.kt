@@ -10,7 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.abdus.apps.immich.ui.screens.ConfigScreen
 
 class ConfigActivity : ComponentActivity() {
-    private val viewModel: ImmichSettingsViewModel by viewModels()
+    private val viewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
