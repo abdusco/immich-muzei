@@ -46,7 +46,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Decode and setup keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+
       - name: Build Release APK
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew immich:assembleRelease \
             -Pversion.name=${{ steps.version.outputs.version_name }} \
@@ -54,7 +63,7 @@ jobs:
 
       - name: Rename APK
         run: |
-          mv immich/build/outputs/apk/release/immich-release-unsigned.apk \
+          mv immich/build/outputs/apk/release/immich-release.apk \
              immich/build/outputs/apk/release/immich-${{ steps.version.outputs.version_name }}.apk
 
       - name: Upload Release APK

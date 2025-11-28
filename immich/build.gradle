@@ -28,6 +28,21 @@ android {
         buildConfigField 'String', 'IMMICH_AUTHORITY', '"' + authorityValue + '"'
     }
 
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE") ?: "")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD")
+            keyAlias System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")
+            keyPassword System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
 
     composeOptions {
         kotlinCompilerExtensionVersion libs.versions.compose.get()
