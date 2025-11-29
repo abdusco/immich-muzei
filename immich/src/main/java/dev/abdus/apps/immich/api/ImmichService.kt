@@ -35,7 +35,11 @@ interface ImmichService {
         val albumIds: List<String>? = null,
         val tagIds: List<String>? = null,
         val size: Int = 10,
-        val isFavorite: Boolean? = null
+        val isFavorite: Boolean? = null,
+        // Filter assets created after this timestamp (ISO-8601 string expected by the API)
+        val createdAfter: String? = null,
+        // Filter assets created before this timestamp (ISO-8601 string expected by the API)
+        val createdBefore: String? = null
     )
 
     @Serializable

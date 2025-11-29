@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import androidx.core.content.edit
 
 private const val PREFS_NAME = "immich_prefs"
 private const val KEY_SERVER_URL = "server_url"
@@ -17,6 +17,8 @@ private const val KEY_SELECTED_ALBUM = "selected_album"  // Deprecated, kept for
 private const val KEY_SELECTED_ALBUMS = "selected_albums"  // New: multiple albums
 private const val KEY_SELECTED_TAGS = "selected_tags"
 private const val KEY_FAVORITES_ONLY = "favorites_only"
+private const val KEY_CREATED_AFTER = "created_after"
+private const val KEY_CREATED_BEFORE = "created_before"
 private const val KEY_LAST_ALBUM_INDEX = "last_album_index"  // Round-robin tracking
 private const val KEY_CACHED_ALBUMS = "cached_albums_json"  // Cached album metadata
 private const val KEY_CACHED_TAGS = "cached_tags_json"  // Cached tag metadata
@@ -32,10 +34,10 @@ class ImmichPreferences(context: Context) {
     fun current(): ImmichConfig = readConfig()
 
     fun updateServer(serverUrl: String, apiKey: String) {
-        prefs.edit().apply {
+        prefs.edit {
             putString(KEY_SERVER_URL, serverUrl.trim())
             putString(KEY_API_KEY, apiKey.trim())
-        }.apply()
+        }
     }
 
     @Deprecated("Use updateSelectedAlbums instead")
@@ -46,19 +48,31 @@ class ImmichPreferences(context: Context) {
     }
 
     fun updateSelectedAlbums(ids: Set<String>) {
-        prefs.edit().apply {
+        prefs.edit {
             putStringSet(KEY_SELECTED_ALBUMS, ids)
             // Reset round-robin index when selection changes
             putInt(KEY_LAST_ALBUM_INDEX, 0)
-        }.apply()
+        }
     }
 
     fun updateSelectedTags(ids: Set<String>) {
-        prefs.edit().putStringSet(KEY_SELECTED_TAGS, ids).apply()
+        prefs.edit { putStringSet(KEY_SELECTED_TAGS, ids) }
     }
 
     fun updateFavoritesOnly(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_FAVORITES_ONLY, enabled).apply()
+        prefs.edit { putBoolean(KEY_FAVORITES_ONLY, enabled) }
+    }
+
+    fun updateCreatedAfter(value: String?) {
+        prefs.edit {
+            if (value == null) remove(KEY_CREATED_AFTER) else putString(KEY_CREATED_AFTER, value)
+        }
+    }
+
+    fun updateCreatedBefore(value: String?) {
+        prefs.edit {
+            if (value == null) remove(KEY_CREATED_BEFORE) else putString(KEY_CREATED_BEFORE, value)
+        }
     }
 
     /**
@@ -70,7 +84,7 @@ class ImmichPreferences(context: Context) {
 
         val current = prefs.getInt(KEY_LAST_ALBUM_INDEX, 0)
         val next = (current + 1) % totalAlbums
-        prefs.edit().putInt(KEY_LAST_ALBUM_INDEX, next).apply()
+        prefs.edit { putInt(KEY_LAST_ALBUM_INDEX, next) }
         return current
     }
 
@@ -79,7 +93,7 @@ class ImmichPreferences(context: Context) {
      */
     fun saveCachedAlbums(albums: List<ImmichAlbumUiModel>) {
         val json = Json.encodeToString(albums)
-        prefs.edit().putString(KEY_CACHED_ALBUMS, json).apply()
+        prefs.edit { putString(KEY_CACHED_ALBUMS, json) }
     }
 
     /**
@@ -99,7 +113,7 @@ class ImmichPreferences(context: Context) {
      */
     fun saveCachedTags(tags: List<ImmichTagUiModel>) {
         val json = Json.encodeToString(tags)
-        prefs.edit().putString(KEY_CACHED_TAGS, json).apply()
+        prefs.edit { putString(KEY_CACHED_TAGS, json) }
     }
 
     /**
@@ -124,10 +138,10 @@ class ImmichPreferences(context: Context) {
             oldAlbumId != null -> {
                 // Migrate old single album to new format
                 val albums = setOf(oldAlbumId)
-                prefs.edit().apply {
+                prefs.edit {
                     putStringSet(KEY_SELECTED_ALBUMS, albums)
                     remove(KEY_SELECTED_ALBUM)  // Clean up old key
-                }.apply()
+                }
                 albums
             }
             else -> emptySet()
@@ -139,6 +153,9 @@ class ImmichPreferences(context: Context) {
             selectedAlbumIds = selectedAlbums,
             selectedTagIds = prefs.getStringSet(KEY_SELECTED_TAGS, emptySet()) ?: emptySet(),
             favoritesOnly = prefs.getBoolean(KEY_FAVORITES_ONLY, false)
+            ,
+            createdAfter = prefs.getString(KEY_CREATED_AFTER, null),
+            createdBefore = prefs.getString(KEY_CREATED_BEFORE, null)
         )
     }
 
@@ -150,7 +167,10 @@ data class ImmichConfig(
     val apiKey: String?,
     val selectedAlbumIds: Set<String> = emptySet(),
     val selectedTagIds: Set<String> = emptySet(),
-    val favoritesOnly: Boolean = false
+    val favoritesOnly: Boolean = false,
+    // Optional ISO-8601 date strings (e.g. "2023-01-01") to filter assets by taken-at
+    val createdAfter: String? = null,
+    val createdBefore: String? = null
 ) {
     val isConfigured: Boolean get() = !serverUrl.isNullOrBlank() && !apiKey.isNullOrBlank()
     val apiBaseUrl: String?
@@ -168,4 +188,3 @@ private fun SharedPreferences.onChangeFlow(): Flow<Unit> = callbackFlow {
     trySend(Unit)
     awaitClose { unregisterOnSharedPreferenceChangeListener(listener) }
 }
-

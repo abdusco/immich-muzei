@@ -79,6 +79,18 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
         clearPhotos()
     }
 
+    fun updateCreatedAfter(value: String?) {
+        Log.d(TAG, "Updating createdAfter: $value")
+        prefs.updateCreatedAfter(value)
+        clearPhotos()
+    }
+
+    fun updateCreatedBefore(value: String?) {
+        Log.d(TAG, "Updating createdBefore: $value")
+        prefs.updateCreatedBefore(value)
+        clearPhotos()
+    }
+
     private fun clearPhotos() {
         Log.d(TAG, "Clearing all photos")
         viewModelScope.launch {
@@ -125,4 +137,3 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 }
-

@@ -77,7 +77,15 @@ class ImmichArtProvider : MuzeiArtProvider() {
 
                 val tagList = config.selectedTagIds.toList().ifEmpty { null }
                 Log.d(TAG, "Fetching random asset with ${albumList?.size ?: "all"} album(s), ${tagList?.size ?: "all"} tag(s), favoritesOnly: ${config.favoritesOnly}")
-                val asset = repository.fetchRandomAsset(service, albumList, tagList, config.favoritesOnly)
+                // Include advanced filters for taken-at if configured
+                val asset = repository.fetchRandomAsset(
+                    service,
+                    albumList,
+                    tagList,
+                    config.favoritesOnly,
+                    config.createdAfter,
+                    config.createdBefore
+                )
 
                 if (asset == null) {
                     Log.w(TAG, "No asset returned from API")

@@ -137,4 +137,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun isImmichActiveSource(): Boolean {
         return muzeiProvider.isImmichActiveSource()
     }
+
+    // New helpers to persist advanced filters and apply them immediately
+    fun updateCreatedAfter(value: String?) {
+        Log.d(TAG, "Updating createdAfter: $value")
+        prefs.updateCreatedAfter(value)
+        clearPhotos()
+    }
+
+    fun updateCreatedBefore(value: String?) {
+        Log.d(TAG, "Updating createdBefore: $value")
+        prefs.updateCreatedBefore(value)
+        clearPhotos()
+    }
 }

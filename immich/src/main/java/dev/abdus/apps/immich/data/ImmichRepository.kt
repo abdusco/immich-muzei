@@ -21,18 +21,21 @@ class ImmichRepository {
         service: ImmichService,
         albumIds: List<String>?,
         tagIds: List<String>?,
-        favoritesOnly: Boolean = false
+        favoritesOnly: Boolean = false,
+        createdAfter: String? = null,
+        createdBefore: String? = null
     ): ImmichAsset? = withContext(Dispatchers.IO) {
         val request = ImmichService.RandomRequest(
             albumIds = albumIds,
             tagIds = tagIds,
             size = 10,
-            isFavorite = if (favoritesOnly) true else null
+            isFavorite = if (favoritesOnly) true else null,
+            createdAfter = createdAfter,
+            createdBefore = createdBefore
         )
-        android.util.Log.d(TAG, "Fetching random assets with albumIds: ${request.albumIds}, tagIds: ${request.tagIds}, size: ${request.size}, isFavorite: ${request.isFavorite}")
+        android.util.Log.d(TAG, "Fetching random assets with albumIds: ${request.albumIds}, tagIds: ${request.tagIds}, size: ${request.size}, isFavorite: ${request.isFavorite}, createdAfter: ${request.createdAfter}, createdBefore: ${request.createdBefore}")
         val result = service.getRandomAssets(request)
         android.util.Log.d(TAG, "Response: ${result.size} assets")
         result.firstOrNull()
     }
 }
-
