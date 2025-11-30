@@ -1,10 +1,9 @@
 package dev.abdus.apps.immich.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
+import android.content.Context
+import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,8 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -37,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -49,12 +47,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.data.ImmichTagUiModel
@@ -64,7 +63,6 @@ import dev.abdus.apps.immich.ui.ConfigActivity
 import dev.abdus.apps.immich.ui.ImmichImageLoader
 import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
-import dev.abdus.apps.immich.ui.components.FiltersComponent
 
 @Composable
 fun SettingsScreen(
@@ -100,15 +98,15 @@ fun SettingsScreen(
         imageLoader = imageLoader,
         isImmichActive = isImmichActive.value,
         onChangeAlbum = {
-            context.startActivity(android.content.Intent(context, AlbumPickerActivity::class.java))
+            context.startActivity(Intent(context, AlbumPickerActivity::class.java))
         },
         onRemoveAlbum = viewModel::toggleAlbum,
         onRemoveTag = viewModel::toggleTag,
         onAddTags = {
-            context.startActivity(android.content.Intent(context, TagPickerActivity::class.java))
+            context.startActivity(Intent(context, TagPickerActivity::class.java))
         },
         onEditConfig = {
-            context.startActivity(android.content.Intent(context, ConfigActivity::class.java))
+            context.startActivity(Intent(context, ConfigActivity::class.java))
         },
         onClearPhotos = viewModel::clearPhotos,
         onToggleFavoritesOnly = viewModel::toggleFavoritesOnly,
@@ -122,7 +120,7 @@ fun SettingsScreen(
 @Composable
 private fun ImmichContent(
     state: ImmichUiState,
-    imageLoader: coil3.ImageLoader,
+    imageLoader: ImageLoader,
     onChangeAlbum: () -> Unit,
     onRemoveAlbum: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
@@ -220,7 +218,7 @@ private fun ImmichEmptyState() {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { context.startActivity(android.content.Intent(context, ConfigActivity::class.java)) }) {
+        Button(onClick = { context.startActivity(Intent(context, ConfigActivity::class.java)) }) {
             Text("Configure Settings")
         }
     }
@@ -236,7 +234,7 @@ private fun ImmichLoading() {
 @Composable
 private fun SelectedItemsView(
     state: ImmichUiState,
-    imageLoader: coil3.ImageLoader,
+    imageLoader: ImageLoader,
     onChangeAlbum: () -> Unit,
     onRemoveAlbum: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
@@ -260,275 +258,229 @@ private fun SelectedItemsView(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Muzei source warning
-        if (!isImmichActive) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = "Immich is not your active wallpaper source",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                        Text(
-                            text = "Change your Muzei source to Immich to see photos from your library",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                        Button(onClick = {
-                            try {
-                                val intent = android.content.Intent().apply {
-                                    action = "com.google.android.apps.muzei.ACTION_CHOOSE_PROVIDER"
-                                    setPackage("net.nurik.roman.muzei")
-                                }
-                                context.startActivity(intent)
-                            } catch (_: Exception) {
-                                try {
-                                    val intent = context.packageManager.getLaunchIntentForPackage("net.nurik.roman.muzei")
-                                    if (intent != null) context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    android.util.Log.e("ImmichSettings", "Could not open Muzei")
-                                }
-                            }
-                        }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Change Source")
-                        }
-                    }
-                }
+        item {
+            if (!isImmichActive) {
+                SourceWarningBanner(context)
             }
         }
 
         item {
             state.errorMessage?.let {
-                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                    Text(text = it, modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
-                }
+                ErrorBanner(it)
             }
         }
 
-        // Albums moved here (above the collapsible)
         item {
-            // Albums
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Albums",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+            SelectedAlbums(selectedAlbums, onChangeAlbum, imageLoader)
+        }
 
-                if (selectedAlbums.isEmpty()) {
-                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(text = "No albums selected", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(text = "All albums will be used", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Button(onClick = onChangeAlbum) { Text("Add Albums") }
-                        }
+        item {
+            SelectedTags(selectedTags, onAddTags)
+        }
+
+        item {
+            FavoritesOnly(state, onToggleFavoritesOnly)
+        }
+
+        item {
+            DateFilters(
+                createdAfterDaysBack = createdAfterDaysBack,
+                onCreatedAfterChanged = onCreatedAfterChanged
+            )
+        }
+    }
+}
+
+@Composable
+fun DateFilters(
+    // days-back value (e.g. 7 for last week). null means filter disabled.
+    createdAfterDaysBack: Int?,
+    onCreatedAfterChanged: (Int?) -> Unit
+) {
+    // Preset options and mapping to days back from today
+    val presets = listOf("Today", "Last week", "2 weeks", "Last month", "2 months", "6 months")
+    val daysBack = listOf(0, 7, 14, 30, 60, 180)
+
+    // Try to infer initial index from createdAfterDaysBack if provided, otherwise default to Last week (index 1)
+    val initialIndex = remember(createdAfterDaysBack) {
+        try {
+            if (createdAfterDaysBack != null) {
+                val idx = daysBack.indexOf(createdAfterDaysBack)
+                if (idx >= 0) idx else 1
+            } else {
+                1 // default: Last week
+            }
+        } catch (_: Exception) {
+            1
+        }
+    }
+
+    var sliderPosition by remember { mutableStateOf(initialIndex.toFloat()) }
+    var pendingIndex by remember { mutableStateOf(initialIndex) }
+    var enabled by remember { mutableStateOf(createdAfterDaysBack != null) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Taken since", style = MaterialTheme.typography.titleMedium)
+                    Text(text = "Show photos that were created after this date", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                // Toggle for enabling/disabling the slider
+                Switch(checked = enabled, onCheckedChange = { checked ->
+                    enabled = checked
+                    if (!checked) {
+                        // when disabling, clear the filter immediately
+                        onCreatedAfterChanged(null)
+                        sliderPosition = 1f
+                        pendingIndex = 1
+                    } else {
+                        // when enabling, immediately apply the current pending selection
+                        val days = daysBack.getOrElse(pendingIndex) { 7 }
+                        onCreatedAfterChanged(days)
                     }
-                } else {
-                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                        Column(modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = when (selectedAlbums.size) {
-                                    1 -> "1 album selected"
-                                    else -> "${selectedAlbums.size} albums selected"
-                                },
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                })
+            }
 
+            Spacer(modifier = Modifier.width(4.dp))
 
-                            // Show textual summary of titles (up to 3)
-                            val previewTitles = selectedAlbums.take(3).joinToString(", ") { it.title }
-                            Text(
-                                text = if (selectedAlbums.size <= 3) previewTitles else "$previewTitles, +${selectedAlbums.size - 3} more",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+            Slider(
+                value = sliderPosition,
+                onValueChange = { value ->
+                    // determine nearest index and snap the slider to that exact position immediately
+                    sliderPosition = value
 
-                            // Thumbnails preview (scrollable horizontally)
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp)
-                            ) {
-                                items(selectedAlbums, key = { it.id }) { album ->
-                                     Card(modifier = Modifier.size(96.dp), shape = RoundedCornerShape(8.dp)) {
-                                         if (album.coverUrl != null) {
-                                             AsyncImage(
-                                                 model = album.coverUrl,
-                                                 imageLoader = imageLoader,
-                                                 contentDescription = album.title,
-                                                 contentScale = ContentScale.Crop,
-                                                 modifier = Modifier.fillMaxSize()
-                                             )
-                                         } else {
-                                             Box(
-                                                 modifier = Modifier
-                                                     .fillMaxSize()
-                                                     .background(MaterialTheme.colorScheme.surfaceVariant),
-                                                 contentAlignment = Alignment.Center
-                                             ) {
-                                                 Icon(
-                                                     imageVector = Icons.Outlined.PhotoLibrary,
-                                                     contentDescription = null,
-                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                 )
-                                             }
-                                         }
-                                     }
-                                }
-                            }
+                },
+                onValueChangeFinished = {
+                    if (enabled) {
+                        pendingIndex = sliderPosition.toInt().coerceIn(0, presets.lastIndex)
+                        val days = daysBack.getOrElse(pendingIndex) { 7 }
+                        onCreatedAfterChanged(days)
+                    }
+                },
+                // Make slider non-interactive when filter is disabled
+                enabled = enabled,
+                valueRange = 0f..(presets.lastIndex).toFloat(),
+                steps = presets.size - 2 // discrete steps between endpoints
 
-                            Button(onClick = onChangeAlbum, modifier = Modifier.fillMaxWidth()) {
-                                Text("Change Albums")
-                            }
-                        }
+            )
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                presets.forEachIndexed { idx, label ->
+                    val isSelected = idx == pendingIndex
+                    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.Medium else androidx.compose.ui.text.font.FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Left,
+                        )
                     }
                 }
             }
+
+            // Removed Apply / Clear buttons: changes are applied immediately when enabled
         }
+    }
+}
 
-        // Collapsible selection + filters
-        item {
-            var collapsed by remember { mutableStateOf(false) }
-            // animate the chevron rotation
-            val rotation by animateFloatAsState(targetValue = if (collapsed) 180f else 0f)
 
-            Column(modifier = Modifier.animateContentSize()) {
-                Row(
+@Composable
+private fun FavoritesOnly(state: ImmichUiState, onToggleFavoritesOnly: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Favorites only", style = MaterialTheme.typography.titleMedium)
+                Text(text = "Show only favorited photos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = state.config.favoritesOnly, onCheckedChange = { onToggleFavoritesOnly() })
+        }
+    }
+}
+
+@Composable
+private fun SelectedTags(selectedTags: List<ImmichTagUiModel>, onAddTags: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Filter by tags",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+
+        if (selectedTags.isEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { collapsed = !collapsed },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(text = "No tags selected", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Button(onClick = onAddTags) { Text("Add Tags") }
+                }
+            }
+        } else {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Filters",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        text = when (selectedTags.size) {
+                            1 -> "1 tag selected"
+                            else -> "${selectedTags.size} tags selected"
+                        },
+                        style = MaterialTheme.typography.bodyMedium
                     )
-                    IconButton(onClick = { collapsed = !collapsed }) {
-                        Icon(
-                            imageVector = if (collapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
-                            contentDescription = null,
-                            modifier = Modifier.rotate(rotation)
-                        )
-                    }
-                }
 
-                AnimatedVisibility(visible = !collapsed) {
-                    Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Tags: show compact summary + action (no per-tag rows here)
-                        Column {
-                            Text(
-                                text = "Filter by tags",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(top = 16.dp, start = 4.dp)
+                    // Show selected tags as chips (up to 3), with a "+N more" chip if there are more
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(selectedTags.take(3)) { tag ->
+                            SuggestionChip(
+                                enabled = false,
+                                onClick = {},
+                                label = {
+                                    Text(tag.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
                             )
-
-                            if (selectedTags.isEmpty()) {
-                                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(24.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Text(text = "No tags selected", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Button(onClick = onAddTags) { Text("Add Tags") }
-                                    }
-                                }
-                            } else {
-                                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                                    Column(modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(
-                                            text = when (selectedTags.size) {
-                                                1 -> "1 tag selected"
-                                                else -> "${selectedTags.size} tags selected"
-                                            },
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-
-                                        // Show selected tags as chips (up to 3), with a "+N more" chip if there are more
-                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            items(selectedTags.take(3)) { tag ->
-                                                SuggestionChip(
-                                                    enabled = false,
-                                                    onClick = {},
-                                                    label = {
-                                                        Text(tag.name, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                                    }
-                                                )
-                                            }
-                                            if (selectedTags.size > 3) {
-                                                item {
-                                                    SuggestionChip(
-                                                        enabled = false,
-                                                        onClick = {},
-                                                        label = { Text("+${selectedTags.size - 3} more") }
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        Button(onClick = onAddTags, modifier = Modifier.fillMaxWidth()) {
-                                            Text("Change Tags")
-                                        }
-                                    }
-                                }
+                        }
+                        if (selectedTags.size > 3) {
+                            item {
+                                SuggestionChip(
+                                    enabled = false,
+                                    onClick = {},
+                                    label = { Text("+${selectedTags.size - 3} more") }
+                                )
                             }
                         }
+                    }
 
-                        // Favorites
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(text = "Favorites only", style = MaterialTheme.typography.titleMedium)
-                                    Text(text = "Show only favorited photos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Switch(checked = state.config.favoritesOnly, onCheckedChange = { onToggleFavoritesOnly() })
-                            }
-                        }
-
-                        // Filters component
-                        FiltersComponent(
-                            createdAfterDaysBack = createdAfterDaysBack,
-                            onCreatedAfterChanged = onCreatedAfterChanged
-                        )
+                    Button(onClick = onAddTags, modifier = Modifier.fillMaxWidth()) {
+                        Text("Change Tags")
                     }
                 }
             }
@@ -537,31 +489,145 @@ private fun SelectedItemsView(
 }
 
 @Composable
-private fun SelectedAlbumRow(album: ImmichAlbumUiModel, imageLoader: coil3.ImageLoader, onRemove: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            album.coverUrl?.let { url ->
-                Card(modifier = Modifier.size(80.dp), shape = RoundedCornerShape(8.dp)) {
-                    AsyncImage(model = url, imageLoader = imageLoader, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+private fun SelectedAlbums(selectedAlbums: List<ImmichAlbumUiModel>, onChangeAlbum: () -> Unit, imageLoader: ImageLoader) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Albums",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+
+        if (selectedAlbums.isEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(text = "No albums selected", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = "All albums will be used", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Button(onClick = onChangeAlbum) { Text("Add Albums") }
                 }
-                Spacer(Modifier.width(16.dp))
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = album.title, style = MaterialTheme.typography.titleMedium)
-                Text(text = "${album.assetCount} photos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = when (selectedAlbums.size) {
+                            1 -> "1 album selected"
+                            else -> "${selectedAlbums.size} albums selected"
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+
+                    // Show textual summary of titles (up to 3)
+                    val previewTitles = selectedAlbums.take(3).joinToString(", ") { it.title }
+                    Text(
+                        text = if (selectedAlbums.size <= 3) previewTitles else "$previewTitles, +${selectedAlbums.size - 3} more",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Thumbnails preview (scrollable horizontally)
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        items(selectedAlbums, key = { it.id }) { album ->
+                            Card(modifier = Modifier.size(96.dp), shape = RoundedCornerShape(8.dp)) {
+                                if (album.coverUrl != null) {
+                                    AsyncImage(
+                                        model = album.coverUrl,
+                                        imageLoader = imageLoader,
+                                        contentDescription = album.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.PhotoLibrary,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Button(onClick = onChangeAlbum, modifier = Modifier.fillMaxWidth()) {
+                        Text("Change Albums")
+                    }
+                }
             }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = onRemove) { Text("Remove") }
         }
     }
 }
 
 @Composable
-private fun SelectedTagRow(tag: ImmichTagUiModel, onRemove: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(text = tag.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            Button(onClick = onRemove) { Text("Remove") }
+private fun ErrorBanner(errorMessage: String) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+        Text(text = errorMessage, modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun SourceWarningBanner(context: Context) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Immich is not your active wallpaper source",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Text(
+                text = "Change your Muzei source to Immich to see photos from your library",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Button(onClick = {
+                try {
+                    val intent = Intent().apply {
+                        action = "com.google.android.apps.muzei.ACTION_CHOOSE_PROVIDER"
+                        setPackage("net.nurik.roman.muzei")
+                    }
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    try {
+                        val intent = context.packageManager.getLaunchIntentForPackage("net.nurik.roman.muzei")
+                        if (intent != null) context.startActivity(intent)
+                    } catch (_: Exception) {
+                        Log.e("ImmichSettings", "Could not open Muzei")
+                    }
+                }
+            }, modifier = Modifier.fillMaxWidth()) {
+                Text("Change Source")
+            }
         }
     }
 }
+
