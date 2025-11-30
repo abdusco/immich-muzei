@@ -21,6 +21,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class ImmichArtProvider : MuzeiArtProvider() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -78,12 +80,21 @@ class ImmichArtProvider : MuzeiArtProvider() {
                 val tagList = config.selectedTagIds.toList().ifEmpty { null }
                 Log.d(TAG, "Fetching random asset with ${albumList?.size ?: "all"} album(s), ${tagList?.size ?: "all"} tag(s), favoritesOnly: ${config.favoritesOnly}")
                 // Include advanced filters for taken-at if configured
+                // Map stored days-back preference to an ISO date string (if present). Prefer days-back when available.
+                val createdAfterIso: String? = config.filterPresetDaysBack?.let { days ->
+                    try {
+                        LocalDate.now().minusDays(days.toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+
                 val asset = repository.fetchRandomAsset(
                     service,
                     albumList,
                     tagList,
                     config.favoritesOnly,
-                    config.createdAfter,
+                    createdAfterIso,
                     config.createdBefore
                 )
 
@@ -93,7 +104,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
                 }
 
                 Log.d(TAG, "Got asset: id=${asset.id}, filename=${asset.originalFileName}")
-                val imageUrl = buildAssetUrl(config.serverUrl!!, asset.id, config.apiKey!!)
+                val imageUrl = buildAssetUrl(checkNotNull(config.serverUrl), asset.id, checkNotNull(config.apiKey))
                 Log.d(TAG, "Built image URL: $imageUrl")
 
                 val byline = asset.fileCreatedAt?.let { raw ->

@@ -138,16 +138,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         return muzeiProvider.isImmichActiveSource()
     }
 
-    // New helpers to persist advanced filters and apply them immediately
-    fun updateCreatedAfter(value: String?) {
-        Log.d(TAG, "Updating createdAfter: $value")
-        prefs.updateCreatedAfter(value)
-        clearPhotos()
-    }
 
-    fun updateCreatedBefore(value: String?) {
-        Log.d(TAG, "Updating createdBefore: $value")
-        prefs.updateCreatedBefore(value)
+    fun updateFilterDaysBack(days: Int?) {
+        Log.d(TAG, "Updating filter days-back: $days")
+        prefs.updateFilterDaysBack(days)
         clearPhotos()
     }
 }

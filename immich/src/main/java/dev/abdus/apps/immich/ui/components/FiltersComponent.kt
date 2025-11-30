@@ -3,155 +3,126 @@ package dev.abdus.apps.immich.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FiltersComponent(
-    createdAfter: String?,
-    createdBefore: String?,
-    onCreatedAfterChanged: (String?) -> Unit,
-    onCreatedBeforeChanged: (String?) -> Unit
+    // days-back value (e.g. 7 for last week). null means filter disabled.
+    createdAfterDaysBack: Int?,
+    onCreatedAfterChanged: (Int?) -> Unit
 ) {
-    var createdAfterInput by remember { mutableStateOf(createdAfter ?: "") }
-    var createdBeforeInput by remember { mutableStateOf(createdBefore ?: "") }
+    // Preset options and mapping to days back from today
+    val presets = listOf("Today", "Last week", "2 weeks", "Last month", "2 months", "6 months")
+    val daysBack = listOf(0, 7, 14, 30, 60, 180)
 
-    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    var showAfterPicker by remember { mutableStateOf(false) }
-    var showBeforePicker by remember { mutableStateOf(false) }
+    // Try to infer initial index from createdAfterDaysBack if provided, otherwise default to Last week (index 1)
+    val initialIndex = remember(createdAfterDaysBack) {
+        try {
+            if (createdAfterDaysBack != null) {
+                val idx = daysBack.indexOf(createdAfterDaysBack)
+                if (idx >= 0) idx else 1
+            } else {
+                1 // default: Last week
+            }
+        } catch (_: Exception) {
+            1
+        }
+    }
 
-    fun millisToDateString(ms: Long): String = sdf.format(Date(ms))
-
-    val initialAfterMillis = try {
-        sdf.parse(createdAfterInput)?.time
-    } catch (_: Exception) { null }
-
-    val initialBeforeMillis = try {
-        sdf.parse(createdBeforeInput)?.time
-    } catch (_: Exception) { null }
-
-    val afterPickerState = rememberDatePickerState(initialSelectedDateMillis = initialAfterMillis)
-    val beforePickerState = rememberDatePickerState(initialSelectedDateMillis = initialBeforeMillis)
+    var sliderPosition by remember { mutableStateOf(initialIndex.toFloat()) }
+    var pendingIndex by remember { mutableStateOf(initialIndex) }
+    var enabled by remember { mutableStateOf(createdAfterDaysBack != null) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors()
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = "Advanced filters")
-            Text(text = "Taken at")
-
-            OutlinedTextField(
-                value = createdAfterInput,
-                onValueChange = { /* read-only */ },
-                label = { Text("After (YYYY-MM-DD)") },
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                readOnly = true,
-                trailingIcon = {
-                    IconButton(onClick = { showAfterPicker = true }) {
-                        Icon(imageVector = Icons.Default.DateRange, contentDescription = "Pick after date")
-                    }
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Taken since", style = MaterialTheme.typography.titleMedium)
+                    Text(text = "Show photos that were created after this date", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                // Toggle for enabling/disabling the slider
+                Switch(checked = enabled, onCheckedChange = { checked ->
+                    enabled = checked
+                    if (!checked) {
+                        // when disabling, clear the filter immediately
+                        onCreatedAfterChanged(null)
+                        sliderPosition = 1f
+                        pendingIndex = 1
+                    } else {
+                        // when enabling, immediately apply the current pending selection
+                        val days = daysBack.getOrElse(pendingIndex) { 7 }
+                        onCreatedAfterChanged(days)
+                    }
+                })
+            }
+
+            Spacer(modifier = Modifier.width(4.dp))
+
+            Slider(
+                value = sliderPosition,
+                onValueChange = { value ->
+                    // determine nearest index and snap the slider to that exact position immediately
+                    sliderPosition = value
+
+                },
+                onValueChangeFinished = {
+                    if (enabled) {
+                        pendingIndex = sliderPosition.toInt().coerceIn(0, presets.lastIndex)
+                        val days = daysBack.getOrElse(pendingIndex) { 7 }
+                        onCreatedAfterChanged(days)
+                    }
+                },
+                // Make slider non-interactive when filter is disabled
+                enabled = enabled,
+                valueRange = 0f..(presets.lastIndex).toFloat(),
+                steps = presets.size - 2 // discrete steps between endpoints
+
             )
 
-            OutlinedTextField(
-                value = createdBeforeInput,
-                onValueChange = { /* read-only */ },
-                label = { Text("Before (YYYY-MM-DD)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                readOnly = true,
-                trailingIcon = {
-                    IconButton(onClick = { showBeforePicker = true }) {
-                        Icon(imageVector = Icons.Default.DateRange, contentDescription = "Pick before date")
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                presets.forEachIndexed { idx, label ->
+                    val isSelected = idx == pendingIndex
+                    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.Medium else androidx.compose.ui.text.font.FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Left,
+                        )
                     }
-                }
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = {
-                    val after = if (createdAfterInput.isBlank()) null else createdAfterInput
-                    val before = if (createdBeforeInput.isBlank()) null else createdBeforeInput
-                    onCreatedAfterChanged(after)
-                    onCreatedBeforeChanged(before)
-                }) {
-                    Text("Apply")
-                }
-                Button(onClick = {
-                    createdAfterInput = ""
-                    createdBeforeInput = ""
-                    onCreatedAfterChanged(null)
-                    onCreatedBeforeChanged(null)
-                }) {
-                    Text("Clear")
                 }
             }
 
-            if (showAfterPicker) {
-                DatePickerDialog(
-                    onDismissRequest = { showAfterPicker = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            val ms = afterPickerState.selectedDateMillis
-                            if (ms != null) {
-                                createdAfterInput = millisToDateString(ms)
-                            }
-                            showAfterPicker = false
-                        }) { Text("OK") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showAfterPicker = false }) { Text("Cancel") }
-                    }
-                ) {
-                    DatePicker(state = afterPickerState)
-                }
-            }
-
-            if (showBeforePicker) {
-                DatePickerDialog(
-                    onDismissRequest = { showBeforePicker = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            val ms = beforePickerState.selectedDateMillis
-                            if (ms != null) {
-                                createdBeforeInput = millisToDateString(ms)
-                            }
-                            showBeforePicker = false
-                        }) { Text("OK") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showBeforePicker = false }) { Text("Cancel") }
-                    }
-                ) {
-                    DatePicker(state = beforePickerState)
-                }
-            }
+            // Removed Apply / Clear buttons: changes are applied immediately when enabled
         }
     }
 }

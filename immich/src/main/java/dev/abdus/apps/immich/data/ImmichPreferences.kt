@@ -19,6 +19,7 @@ private const val KEY_SELECTED_TAGS = "selected_tags"
 private const val KEY_FAVORITES_ONLY = "favorites_only"
 private const val KEY_CREATED_AFTER = "created_after"
 private const val KEY_CREATED_BEFORE = "created_before"
+private const val KEY_FILTER_DAYS_BACK = "filter_days_back"  // New: store days-back directly
 private const val KEY_LAST_ALBUM_INDEX = "last_album_index"  // Round-robin tracking
 private const val KEY_CACHED_ALBUMS = "cached_albums_json"  // Cached album metadata
 private const val KEY_CACHED_TAGS = "cached_tags_json"  // Cached tag metadata
@@ -72,6 +73,12 @@ class ImmichPreferences(context: Context) {
     fun updateCreatedBefore(value: String?) {
         prefs.edit {
             if (value == null) remove(KEY_CREATED_BEFORE) else putString(KEY_CREATED_BEFORE, value)
+        }
+    }
+
+    fun updateFilterDaysBack(days: Int?) {
+        prefs.edit {
+            if (days == null) remove(KEY_FILTER_DAYS_BACK) else putInt(KEY_FILTER_DAYS_BACK, days)
         }
     }
 
@@ -148,16 +155,14 @@ class ImmichPreferences(context: Context) {
         }
 
         return ImmichConfig(
-            serverUrl = prefs.getString(KEY_SERVER_URL, null)?.normalizeUrl(),
-            apiKey = prefs.getString(KEY_API_KEY, null)?.trim().orEmpty().ifBlank { null },
-            selectedAlbumIds = selectedAlbums,
-            selectedTagIds = prefs.getStringSet(KEY_SELECTED_TAGS, emptySet()) ?: emptySet(),
-            favoritesOnly = prefs.getBoolean(KEY_FAVORITES_ONLY, false)
-            ,
-            createdAfter = prefs.getString(KEY_CREATED_AFTER, null),
-            createdBefore = prefs.getString(KEY_CREATED_BEFORE, null)
-        )
-    }
+             serverUrl = prefs.getString(KEY_SERVER_URL, null)?.normalizeUrl(),
+             apiKey = prefs.getString(KEY_API_KEY, null)?.trim().orEmpty().ifBlank { null },
+             selectedAlbumIds = selectedAlbums,
+             selectedTagIds = prefs.getStringSet(KEY_SELECTED_TAGS, emptySet()) ?: emptySet(),
+             favoritesOnly = prefs.getBoolean(KEY_FAVORITES_ONLY, false),
+             filterPresetDaysBack = prefs.getInt(KEY_FILTER_DAYS_BACK, -1).let { if (it == -1) null else it }
+         )
+     }
 
     private fun String.normalizeUrl(): String = trim().removeSuffix("/")
 }
@@ -168,10 +173,10 @@ data class ImmichConfig(
     val selectedAlbumIds: Set<String> = emptySet(),
     val selectedTagIds: Set<String> = emptySet(),
     val favoritesOnly: Boolean = false,
-    // Optional ISO-8601 date strings (e.g. "2023-01-01") to filter assets by taken-at
-    val createdAfter: String? = null,
-    val createdBefore: String? = null
-) {
+    val createdBefore: String? = null,
+    // persisted days-back value for the Taken-at slider (e.g. 7 = last week)
+    val filterPresetDaysBack: Int? = null
+ ) {
     val isConfigured: Boolean get() = !serverUrl.isNullOrBlank() && !apiKey.isNullOrBlank()
     val apiBaseUrl: String?
         get() = serverUrl?.let { base ->

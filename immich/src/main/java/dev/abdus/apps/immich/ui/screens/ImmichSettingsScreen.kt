@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExpandLess
@@ -33,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -49,8 +48,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
+import dev.abdus.apps.immich.data.ImmichTagUiModel
 import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.ui.AlbumPickerActivity
 import dev.abdus.apps.immich.ui.ConfigActivity
@@ -58,6 +61,8 @@ import dev.abdus.apps.immich.ui.ImmichImageLoader
 import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
 import dev.abdus.apps.immich.ui.components.FiltersComponent
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun ImmichSettingsScreen(
@@ -88,6 +93,8 @@ fun ImmichSettingsScreen(
         }
     }
 
+    val iso = DateTimeFormatter.ISO_LOCAL_DATE
+
     ImmichContent(
         state = state,
         imageLoader = imageLoader,
@@ -105,8 +112,9 @@ fun ImmichSettingsScreen(
         },
         onClearPhotos = viewModel::clearPhotos,
         onToggleFavoritesOnly = viewModel::toggleFavoritesOnly,
-        onCreatedAfterChanged = { value -> viewModel.updateCreatedAfter(value) },
-        onCreatedBeforeChanged = { value -> viewModel.updateCreatedBefore(value) }
+        onCreatedAfterChanged = { daysBack: Int? ->
+            viewModel.updateFilterDaysBack(daysBack)
+        },
     )
 }
 
@@ -122,8 +130,7 @@ private fun ImmichContent(
     onEditConfig: () -> Unit,
     onClearPhotos: () -> Unit,
     onToggleFavoritesOnly: () -> Unit,
-    onCreatedAfterChanged: (String?) -> Unit,
-    onCreatedBeforeChanged: (String?) -> Unit,
+    onCreatedAfterChanged: (Int?) -> Unit,
     isImmichActive: Boolean
 ) {
     when {
@@ -181,7 +188,6 @@ private fun ImmichContent(
                         onToggleFavoritesOnly = onToggleFavoritesOnly,
                         paddingValues = paddingValues,
                         onCreatedAfterChanged = onCreatedAfterChanged,
-                        onCreatedBeforeChanged = onCreatedBeforeChanged,
                         isImmichActive = isImmichActive
                     )
                 }
@@ -238,9 +244,11 @@ private fun SelectedItemsView(
     onToggleFavoritesOnly: () -> Unit,
     paddingValues: PaddingValues,
     isImmichActive: Boolean,
-    onCreatedAfterChanged: (String?) -> Unit,
-    onCreatedBeforeChanged: (String?) -> Unit
+    onCreatedAfterChanged: (Int?) -> Unit
 ) {
+    // compute days-back to pre-select slider: if createdAfter present, use stored preset index
+    val createdAfterDaysBack: Int? = state.config.filterPresetDaysBack
+
     val selectedAlbums = state.albums.filter { album -> album.id in state.config.selectedAlbumIds }
     val selectedTags = state.tags.filter { tag -> state.config.selectedTagIds.contains(tag.id) }
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -250,7 +258,7 @@ private fun SelectedItemsView(
             .fillMaxSize()
             .padding(paddingValues),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Muzei source warning
         if (!isImmichActive) {
@@ -311,16 +319,40 @@ private fun SelectedItemsView(
         item {
             // Albums
             Column {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "Albums", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp, start = 4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Albums",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
                     if (selectedAlbums.isNotEmpty()) {
-                        Text(text = when (selectedAlbums.size) { 1 -> "1 album" else -> "${selectedAlbums.size} albums" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp, end = 4.dp))
+                        Text(
+                            text = when (selectedAlbums.size) {
+                                1 -> "1 album"
+                                else -> "${selectedAlbums.size} albums"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
                 if (selectedAlbums.isEmpty()) {
                     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                        Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Text(text = "No albums selected", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(text = "All albums will be used", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Button(onClick = onChangeAlbum) { Text("Add Albums") }
@@ -341,69 +373,89 @@ private fun SelectedItemsView(
             // animate the chevron rotation
             val rotation by animateFloatAsState(targetValue = if (collapsed) 180f else 0f)
 
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                Column(modifier = Modifier.padding(8.dp).animateContentSize()) {
-                    Row(modifier = Modifier.fillMaxWidth().clickable { collapsed = !collapsed }.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "Selection & Filters", style = MaterialTheme.typography.titleMedium)
-                        IconButton(onClick = { collapsed = !collapsed }) {
-                            Icon(
-                                imageVector = if (collapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
-                                contentDescription = null,
-                                modifier = Modifier.rotate(rotation)
-                            )
-                        }
+            Column(modifier = Modifier.animateContentSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { collapsed = !collapsed },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Filters",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    IconButton(onClick = { collapsed = !collapsed }) {
+                        Icon(
+                            imageVector = if (collapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+                            contentDescription = null,
+                            modifier = Modifier.rotate(rotation)
+                        )
                     }
+                }
 
-                    AnimatedVisibility(visible = !collapsed) {
-                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            // Favorites
-                            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth().clickable { onToggleFavoritesOnly() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = "Favorites only", style = MaterialTheme.typography.titleMedium)
-                                        Text(text = "Show only favorited photos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    androidx.compose.material3.Switch(checked = state.config.favoritesOnly, onCheckedChange = { onToggleFavoritesOnly() })
-                                }
-                            }
+                AnimatedVisibility(visible = !collapsed) {
+                    Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Tags
+                        Column {
+                            Text(
+                                text = "Filter by tags",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 16.dp, start = 4.dp)
+                            )
 
-                            // Tags
-                            Column {
-                                Text(text = "Filter by tags", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 16.dp, start = 4.dp))
-
-                                if (selectedTags.isEmpty()) {
-                                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                                        Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Text(text = "No tags selected", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            Button(onClick = onAddTags) { Text("Add Tags") }
-                                        }
-                                    }
-                                } else {
-                                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        selectedTags.forEach { tag -> SelectedTagRow(tag = tag, onRemove = { onRemoveTag(tag.id) }) }
-                                        Button(onClick = onAddTags, modifier = Modifier.fillMaxWidth()) { Text("+ Add More Tags") }
+                            if (selectedTags.isEmpty()) {
+                                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(text = "No tags selected", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Button(onClick = onAddTags) { Text("Add Tags") }
                                     }
                                 }
-                            }
-
-                            // Filters component
-                            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                                FiltersComponent(createdAfter = state.config.createdAfter, createdBefore = state.config.createdBefore, onCreatedAfterChanged = onCreatedAfterChanged, onCreatedBeforeChanged = onCreatedBeforeChanged)
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    selectedTags.forEach { tag -> SelectedTagRow(tag = tag, onRemove = { onRemoveTag(tag.id) }) }
+                                    Button(onClick = onAddTags, modifier = Modifier.fillMaxWidth()) { Text("+ Add More Tags") }
+                                }
                             }
                         }
+
+                        // Favorites
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = "Favorites only", style = MaterialTheme.typography.titleMedium)
+                                    Text(text = "Show only favorited photos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = state.config.favoritesOnly, onCheckedChange = { onToggleFavoritesOnly() })
+                            }
+                        }
+
+                        // Filters component
+                        FiltersComponent(
+                            createdAfterDaysBack = createdAfterDaysBack,
+                            onCreatedAfterChanged = onCreatedAfterChanged
+                        )
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SelectedTagRow(tag: dev.abdus.apps.immich.data.ImmichTagUiModel, onRemove: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(text = tag.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            Button(onClick = onRemove) { Text("Remove") }
         }
     }
 }
@@ -423,6 +475,16 @@ private fun SelectedAlbumRow(album: ImmichAlbumUiModel, imageLoader: coil3.Image
                 Text(text = "${album.assetCount} photos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.width(8.dp))
+            Button(onClick = onRemove) { Text("Remove") }
+        }
+    }
+}
+
+@Composable
+private fun SelectedTagRow(tag: ImmichTagUiModel, onRemove: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(text = tag.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
             Button(onClick = onRemove) { Text("Remove") }
         }
     }
