@@ -35,7 +35,7 @@ class ImmichImageLoader {
                 .diskCache {
                     DiskCache.Builder()
                         .directory(context.cacheDir.resolve("immich_image_cache"))
-                        .maxSizeBytes(50L * 1024 * 1024) // 50MB
+                        .maxSizeBytes(20L * 1024 * 1024) // 20MB
                         .build()
                 }
                 .crossfade(true)
