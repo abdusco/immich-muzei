@@ -110,7 +110,8 @@ class ImmichArtProvider : MuzeiArtProvider() {
                     Artwork(
                         token = asset.id,
                         title = asset.originalFileName,
-                        byline = asset.id,
+                        byline = asset.fileCreatedAt.let { v -> v?.substringBefore('T') },
+                        attribution = asset.id,
                         persistentUri = imageUrl.toUri(),
                         webUri = buildAssetViewUrl(checkNotNull(config.serverUrl), asset.id).toUri()
                     )

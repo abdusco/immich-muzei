@@ -57,55 +57,24 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
     private suspend fun favoriteCurrentArtwork(context: Context) {
         Log.d(TAG, "Starting favoriteCurrentArtwork")
 
-        // Get the current artwork from Muzei and its ID
-        val artworkData = withContext(Dispatchers.IO) {
-            context.contentResolver.query(
-                MuzeiContract.Artwork.CONTENT_URI,
-                null,
-                null,
-                null,
-                null
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    Log.d(TAG, "Found current artwork in cursor")
-                    val artwork = com.google.android.apps.muzei.api.Artwork.fromCursor(cursor)
-                    val idIndex = cursor.getColumnIndex("_id")
-                    val id = if (idIndex >= 0) cursor.getLong(idIndex) else null
-                    Log.d(TAG, "Artwork: authority=${artwork.providerAuthority}, id=$id")
-                    Pair(artwork, id)
-                } else {
-                    Log.w(TAG, "No artwork found in cursor")
-                    null
-                }
-            }
+        val artwork = withContext(Dispatchers.IO) {
+            MuzeiContract.Artwork.getCurrentArtwork(context)
         }
 
-        if (artworkData == null) {
+        if (artwork == null) {
             Log.e(TAG, "artworkData is null")
             showError(context, "No artwork currently displayed")
             return
         }
 
-        val (currentArtwork, artworkId) = artworkData
-
-        if (artworkId == null) {
-            Log.e(TAG, "artworkId is null")
-            showError(context, "Could not get artwork ID")
-            return
-        }
-
         // Check if the current artwork is from Immich provider
-        if (currentArtwork.providerAuthority != IMMICH_AUTHORITY) {
-            Log.e(TAG, "Current provider is ${currentArtwork.providerAuthority}, not Immich")
+        if (artwork.providerAuthority != IMMICH_AUTHORITY) {
+            Log.e(TAG, "Current provider is ${artwork.providerAuthority}, not Immich")
             showError(context, "Current wallpaper is not from Immich")
             return
         }
 
-        Log.d(TAG, "Querying Immich provider for asset ID")
-        // Query the Immich provider directly to get the token (asset ID)
-        val assetId = withContext(Dispatchers.IO) {
-            getAssetIdFromProvider(context, artworkId)
-        }
+        val assetId = artwork.attribution
 
         if (assetId == null) {
             Log.e(TAG, "Failed to get asset ID from provider")
