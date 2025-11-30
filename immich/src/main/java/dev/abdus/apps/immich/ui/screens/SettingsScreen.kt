@@ -2,7 +2,6 @@ package dev.abdus.apps.immich.ui.screens
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -100,9 +99,7 @@ fun SettingsScreen(
         onChangeAlbum = {
             context.startActivity(Intent(context, AlbumPickerActivity::class.java))
         },
-        onRemoveAlbum = viewModel::toggleAlbum,
-        onRemoveTag = viewModel::toggleTag,
-        onAddTags = {
+        onChangeTags = {
             context.startActivity(Intent(context, TagPickerActivity::class.java))
         },
         onEditConfig = {
@@ -113,6 +110,7 @@ fun SettingsScreen(
         onCreatedAfterChanged = { daysBack: Int? ->
             viewModel.updateFilterDaysBack(daysBack)
         },
+        onLaunchChooseProvider = { viewModel.launchChooseMuzeiSource(it) }
     )
 }
 
@@ -122,14 +120,13 @@ private fun ImmichContent(
     state: ImmichUiState,
     imageLoader: ImageLoader,
     onChangeAlbum: () -> Unit,
-    onRemoveAlbum: (String) -> Unit,
-    onRemoveTag: (String) -> Unit,
-    onAddTags: () -> Unit,
+    onChangeTags: () -> Unit,
     onEditConfig: () -> Unit,
     onClearPhotos: () -> Unit,
     onToggleFavoritesOnly: () -> Unit,
     onCreatedAfterChanged: (Int?) -> Unit,
-    isImmichActive: Boolean
+    isImmichActive: Boolean,
+    onLaunchChooseProvider: (Context) -> Unit
 ) {
     when {
         !state.config.isConfigured -> ImmichEmptyState()
@@ -180,13 +177,12 @@ private fun ImmichContent(
                         state = state,
                         imageLoader = imageLoader,
                         onChangeAlbum = onChangeAlbum,
-                        onRemoveAlbum = onRemoveAlbum,
-                        onRemoveTag = onRemoveTag,
-                        onAddTags = onAddTags,
+                        onChangeTags = onChangeTags,
                         onToggleFavoritesOnly = onToggleFavoritesOnly,
                         paddingValues = paddingValues,
                         onCreatedAfterChanged = onCreatedAfterChanged,
-                        isImmichActive = isImmichActive
+                        isImmichActive = isImmichActive,
+                        onLaunchChooseProvider = onLaunchChooseProvider
                     )
                 }
             }
@@ -236,13 +232,12 @@ private fun SelectedItemsView(
     state: ImmichUiState,
     imageLoader: ImageLoader,
     onChangeAlbum: () -> Unit,
-    onRemoveAlbum: (String) -> Unit,
-    onRemoveTag: (String) -> Unit,
-    onAddTags: () -> Unit,
+    onChangeTags: () -> Unit,
     onToggleFavoritesOnly: () -> Unit,
     paddingValues: PaddingValues,
     isImmichActive: Boolean,
-    onCreatedAfterChanged: (Int?) -> Unit
+    onCreatedAfterChanged: (Int?) -> Unit,
+    onLaunchChooseProvider: (Context) -> Unit
 ) {
     // compute days-back to pre-select slider: if createdAfter present, use stored preset index
     val createdAfterDaysBack: Int? = state.config.filterPresetDaysBack
@@ -260,7 +255,7 @@ private fun SelectedItemsView(
     ) {
         item {
             if (!isImmichActive) {
-                SourceWarningBanner(context)
+                SourceWarningBanner(context, onLaunchChooseProvider)
             }
         }
 
@@ -275,7 +270,7 @@ private fun SelectedItemsView(
         }
 
         item {
-            SelectedTags(selectedTags, onAddTags)
+            SelectedTags(selectedTags, onChangeTags)
         }
 
         item {
@@ -587,7 +582,7 @@ private fun ErrorBanner(errorMessage: String) {
 }
 
 @Composable
-private fun SourceWarningBanner(context: Context) {
+private fun SourceWarningBanner(context: Context, onLaunchChooseProvider: (Context) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
@@ -609,25 +604,9 @@ private fun SourceWarningBanner(context: Context) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onTertiaryContainer
             )
-            Button(onClick = {
-                try {
-                    val intent = Intent().apply {
-                        action = "com.google.android.apps.muzei.ACTION_CHOOSE_PROVIDER"
-                        setPackage("net.nurik.roman.muzei")
-                    }
-                    context.startActivity(intent)
-                } catch (_: Exception) {
-                    try {
-                        val intent = context.packageManager.getLaunchIntentForPackage("net.nurik.roman.muzei")
-                        if (intent != null) context.startActivity(intent)
-                    } catch (_: Exception) {
-                        Log.e("ImmichSettings", "Could not open Muzei")
-                    }
-                }
-            }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { onLaunchChooseProvider(context) }, modifier = Modifier.fillMaxWidth()) {
                 Text("Change Source")
             }
         }
     }
 }
-

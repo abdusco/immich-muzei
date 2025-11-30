@@ -1,7 +1,9 @@
 package dev.abdus.apps.immich.provider
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
+import com.google.android.apps.muzei.api.createChooseProviderIntent
 import com.google.android.apps.muzei.api.isSelected
 import com.google.android.apps.muzei.api.provider.ProviderContract
 import dev.abdus.apps.immich.BuildConfig
@@ -46,5 +48,18 @@ class MuzeiProvider(private val context: Context) {
             false
         }
     }
-}
 
+    /**
+     * Build an intent that deep links into Muzei's source picker for Immich.
+     */
+    fun createChooseProviderIntent(): Intent? {
+        return try {
+            ProviderContract
+                .getProviderClient(context, BuildConfig.IMMICH_AUTHORITY)
+                .createChooseProviderIntent()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating choose provider intent", e)
+            null
+        }
+    }
+}

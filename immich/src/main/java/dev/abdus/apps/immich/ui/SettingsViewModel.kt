@@ -1,6 +1,7 @@
 package dev.abdus.apps.immich.ui
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
@@ -77,26 +78,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         markPendingChanges()
     }
 
-    fun toggleAlbum(id: String) {
-        val currentSelection = _state.value.config.selectedAlbumIds
-        val newSelection = currentSelection.toMutableSet().apply {
-            if (!add(id)) remove(id)
-        }
-        Log.d(TAG, "Toggling album $id, new selection size: ${newSelection.size}")
-        prefs.updateSelectedAlbums(newSelection)
-        markPendingChanges()
-    }
-
-    fun toggleTag(id: String) {
-        val currentSelection = _state.value.config.selectedTagIds
-        val newSelection = currentSelection.toMutableSet().apply {
-            if (!add(id)) remove(id)
-        }
-        Log.d(TAG, "Toggling tag $id, new selection size: ${newSelection.size}")
-        prefs.updateSelectedTags(newSelection)
-        markPendingChanges()
-    }
-
     fun toggleFavoritesOnly() {
         val newValue = !_state.value.config.favoritesOnly
         Log.d(TAG, "Toggling favorites only: $newValue")
@@ -154,6 +135,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun isImmichActiveSource(): Boolean {
         return muzeiProvider.isImmichActiveSource()
+    }
+
+    fun launchChooseMuzeiSource(context: Context) {
+        val intents = listOf(
+            muzeiProvider.createChooseProviderIntent(),
+            context.packageManager.getLaunchIntentForPackage("net.nurik.roman.muzei")
+        ).filter { it != null }
+
+        for (intent in intents) {
+            try {
+                context.startActivity(intent)
+                return
+            } catch (e: Exception) {
+                Log.e(TAG, "Could not open Muzei with intent: $intent", e)
+                continue
+            }
+        }
+
+        Log.e(TAG, "Could not open Muzei app or provider chooser with any intent")
+
+        Toast.makeText(context, "Could not open Muzei app.", Toast.LENGTH_LONG).show()
     }
 
 
