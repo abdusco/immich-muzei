@@ -89,7 +89,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
                     }
                 }
 
-                val asset = repository.fetchRandomAsset(
+                var assets = repository.fetchRandomAssets(
                     service,
                     albumList,
                     tagList,
@@ -98,33 +98,26 @@ class ImmichArtProvider : MuzeiArtProvider() {
                     config.createdBefore
                 )
 
-                if (asset == null) {
+                if (assets.isEmpty()) {
                     Log.w(TAG, "No asset returned from API")
                     return@launch
                 }
 
-                Log.d(TAG, "Got asset: id=${asset.id}, filename=${asset.originalFileName}")
-                val imageUrl = buildAssetUrl(checkNotNull(config.serverUrl), asset.id, checkNotNull(config.apiKey))
-                Log.d(TAG, "Built image URL: $imageUrl")
+                assets = assets.take(3)
 
-                val byline = asset.fileCreatedAt?.let { raw ->
-                    // Extract YYYY-MM-DD from various ISO-like timestamps safely without java.time
-                    val match = Regex("^(\\d{4}-\\d{2}-\\d{2})").find(raw)
-                    match?.groupValues?.getOrNull(1) ?: run {
-                        if (raw.length >= 10) raw.substring(0, 10) else null
-                    }
-                }
-
-                addArtwork(
+                val artworks = assets.map { asset ->
+                    val imageUrl = buildAssetDownloadUrl(checkNotNull(config.serverUrl), asset.id, checkNotNull(config.apiKey))
                     Artwork(
                         token = asset.id,
                         title = asset.originalFileName,
-                        byline = byline,
+                        byline = asset.id,
                         persistentUri = imageUrl.toUri(),
-                        webUri = imageUrl.toUri()
+                        webUri = buildAssetViewUrl(checkNotNull(config.serverUrl), asset.id).toUri()
                     )
-                )
-                Log.d(TAG, "Artwork added successfully")
+                }
+
+                val addedUris = addArtwork(artworks)
+                Log.d(TAG, "Added ${addedUris.size} artwork URIs")
             } catch (e: IOException) {
                 Log.e(TAG, "IOException while fetching artwork", e)
             } catch (e: Exception) {
@@ -205,8 +198,11 @@ class ImmichArtProvider : MuzeiArtProvider() {
         }
     }
 
-    private fun buildAssetUrl(server: String, assetId: String, apiKey: String): String =
+    private fun buildAssetDownloadUrl(server: String, assetId: String, apiKey: String): String =
         server.removeSuffix("/") + "/api/assets/$assetId/original?apiKey=$apiKey"
+
+    private fun buildAssetViewUrl(server: String, assetId: String): String =
+        server.removeSuffix("/") + "/photos/$assetId"
 
     class FavoriteReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {

@@ -17,14 +17,14 @@ class ImmichRepository {
     suspend fun fetchTags(service: ImmichService): List<dev.abdus.apps.immich.api.ImmichTag> =
         withContext(Dispatchers.IO) { service.getTags() }
 
-    suspend fun fetchRandomAsset(
+    suspend fun fetchRandomAssets(
         service: ImmichService,
         albumIds: List<String>?,
         tagIds: List<String>?,
         favoritesOnly: Boolean = false,
         createdAfter: String? = null,
         createdBefore: String? = null
-    ): ImmichAsset? = withContext(Dispatchers.IO) {
+    ): List<ImmichAsset> = withContext(Dispatchers.IO) {
         val request = ImmichService.RandomRequest(
             albumIds = albumIds,
             tagIds = tagIds,
@@ -36,6 +36,6 @@ class ImmichRepository {
         android.util.Log.d(TAG, "Fetching random assets with albumIds: ${request.albumIds}, tagIds: ${request.tagIds}, size: ${request.size}, isFavorite: ${request.isFavorite}, createdAfter: ${request.createdAfter}, createdBefore: ${request.createdBefore}")
         val result = service.getRandomAssets(request)
         android.util.Log.d(TAG, "Response: ${result.size} assets")
-        result.firstOrNull()
+        result
     }
 }
