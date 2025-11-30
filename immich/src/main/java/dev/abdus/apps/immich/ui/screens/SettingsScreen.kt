@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,7 +50,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.data.ImmichTagUiModel
@@ -60,7 +64,6 @@ import dev.abdus.apps.immich.ui.ImmichImageLoader
 import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
 import dev.abdus.apps.immich.ui.components.FiltersComponent
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun SettingsScreen(
@@ -314,31 +317,12 @@ private fun SelectedItemsView(
         // Albums moved here (above the collapsible)
         item {
             // Albums
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Albums",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-
-                    if (selectedAlbums.isNotEmpty()) {
-                        Text(
-                            text = when (selectedAlbums.size) {
-                                1 -> "1 album"
-                                else -> "${selectedAlbums.size} albums"
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Albums",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
 
                 if (selectedAlbums.isEmpty()) {
                     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
@@ -355,9 +339,67 @@ private fun SelectedItemsView(
                         }
                     }
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        selectedAlbums.forEach { album -> SelectedAlbumRow(album = album, imageLoader = imageLoader, onRemove = { onRemoveAlbum(album.id) }) }
-                        Button(onClick = onChangeAlbum, modifier = Modifier.fillMaxWidth()) { Text("+ Add More Albums") }
+                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Column(modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = when (selectedAlbums.size) {
+                                    1 -> "1 album selected"
+                                    else -> "${selectedAlbums.size} albums selected"
+                                },
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+
+                            // Show textual summary of titles (up to 3)
+                            val previewTitles = selectedAlbums.take(3).joinToString(", ") { it.title }
+                            Text(
+                                text = if (selectedAlbums.size <= 3) previewTitles else "$previewTitles, +${selectedAlbums.size - 3} more",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            // Thumbnails preview (scrollable horizontally)
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                items(selectedAlbums, key = { it.id }) { album ->
+                                     Card(modifier = Modifier.size(96.dp), shape = RoundedCornerShape(8.dp)) {
+                                         if (album.coverUrl != null) {
+                                             AsyncImage(
+                                                 model = album.coverUrl,
+                                                 imageLoader = imageLoader,
+                                                 contentDescription = album.title,
+                                                 contentScale = ContentScale.Crop,
+                                                 modifier = Modifier.fillMaxSize()
+                                             )
+                                         } else {
+                                             Box(
+                                                 modifier = Modifier
+                                                     .fillMaxSize()
+                                                     .background(MaterialTheme.colorScheme.surfaceVariant),
+                                                 contentAlignment = Alignment.Center
+                                             ) {
+                                                 Icon(
+                                                     imageVector = Icons.Outlined.PhotoLibrary,
+                                                     contentDescription = null,
+                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                 )
+                                             }
+                                         }
+                                     }
+                                }
+                            }
+
+                            Button(onClick = onChangeAlbum, modifier = Modifier.fillMaxWidth()) {
+                                Text("Change Albums")
+                            }
+                        }
                     }
                 }
             }

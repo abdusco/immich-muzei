@@ -1,5 +1,6 @@
 package dev.abdus.apps.immich.ui.screens
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +74,23 @@ fun AlbumPickerScreen(
         state.config.selectedAlbumIds
     }
 
+    // Partition filtered albums into picked / available and sort each section separately
+    val (pickedAlbums, availableAlbums) = remember(filteredAlbums, selectedAlbumIds, state.sortBy, state.sortReversed) {
+        val (picked, available) = filteredAlbums.partition { it.id in selectedAlbumIds }
+
+        fun sortList(list: List<ImmichAlbumUiModel>): List<ImmichAlbumUiModel> {
+            val sorted = when (state.sortBy) {
+                AlbumSortBy.NAME -> list.sortedBy { it.title }
+                AlbumSortBy.ASSET_COUNT -> list.sortedBy { it.assetCount }
+                AlbumSortBy.UPDATED_AT -> list.sortedBy { it.updatedAt ?: "" }
+                AlbumSortBy.MOST_RECENT_PHOTO -> list.sortedBy { it.lastModifiedAssetTimestamp ?: "" }
+            }
+            return if (state.sortReversed) sorted.reversed() else sorted
+        }
+
+        Pair(sortList(picked), sortList(available))
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -140,20 +158,69 @@ fun AlbumPickerScreen(
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
-                    items(
-                        items = filteredAlbums,
-                        key = { album -> album.id },
-                        contentType = { "album_item" }
-                    ) { album ->
-                        val isSelected = album.id in selectedAlbumIds
-                        AlbumPickerRow(
-                            album = album,
-                            imageLoader = imageLoader,
-                            selected = isSelected,
-                            onClick = {
-                                onAlbumClick(album.id)
-                            }
+
+                    // Picked albums section
+                    item {
+                        Text(
+                            text = "Picked (${pickedAlbums.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
+                    }
+                    if (pickedAlbums.isEmpty()) {
+                        item {
+                            Text(
+                                text = "No picked albums",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        items(
+                            items = pickedAlbums,
+                            key = { album -> album.id },
+                            contentType = { "album_item" }
+                        ) { album ->
+                            AlbumPickerRow(
+                                album = album,
+                                imageLoader = imageLoader,
+                                selected = true,
+                                onClick = { onAlbumClick(album.id) }
+                            )
+                        }
+                    }
+
+                    // Available albums section
+                    item {
+                        Text(
+                            text = "Available (${availableAlbums.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                    if (availableAlbums.isEmpty()) {
+                        item {
+                            Text(
+                                text = "No available albums",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        items(
+                            items = availableAlbums,
+                            key = { album -> album.id },
+                            contentType = { "album_item" }
+                        ) { album ->
+                            AlbumPickerRow(
+                                album = album,
+                                imageLoader = imageLoader,
+                                selected = false,
+                                onClick = { onAlbumClick(album.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -175,7 +242,9 @@ private fun AlbumPickerRow(
 
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
@@ -188,7 +257,7 @@ private fun AlbumPickerRow(
         ) {
             androidx.compose.material3.Checkbox(
                 checked = selected,
-                onCheckedChange = null
+                onCheckedChange = { /* make checkbox interactive by toggling selection */ onClick() }
             )
 
             if (album.coverUrl != null) {
@@ -307,4 +376,3 @@ private fun AlbumSortControls(
         }
     }
 }
-
