@@ -2,16 +2,19 @@ package dev.abdus.apps.immich.ui
 
 import android.app.Application
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichService
 import dev.abdus.apps.immich.data.ImmichPreferences
 import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.provider.MuzeiProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = ImmichPreferences(application)
@@ -19,6 +22,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _state = MutableStateFlow(ImmichUiState())
     val state: StateFlow<ImmichUiState> = _state
+
+    // Tracks whether the user made changes that should trigger a photo refresh when they leave
+    private var hasPendingChanges: Boolean = false
 
     companion object {
         private const val TAG = "ImmichSettingsVM"
@@ -68,6 +74,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateCredentials(serverUrl: String, apiKey: String) {
         Log.d(TAG, "Updating credentials: serverUrl=$serverUrl")
         prefs.updateServer(serverUrl, apiKey)
+        markPendingChanges()
     }
 
     fun toggleAlbum(id: String) {
@@ -77,7 +84,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
         Log.d(TAG, "Toggling album $id, new selection size: ${newSelection.size}")
         prefs.updateSelectedAlbums(newSelection)
-        clearPhotos()
+        markPendingChanges()
     }
 
     fun toggleTag(id: String) {
@@ -87,20 +94,31 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
         Log.d(TAG, "Toggling tag $id, new selection size: ${newSelection.size}")
         prefs.updateSelectedTags(newSelection)
-        clearPhotos()
+        markPendingChanges()
     }
 
     fun toggleFavoritesOnly() {
         val newValue = !_state.value.config.favoritesOnly
         Log.d(TAG, "Toggling favorites only: $newValue")
         prefs.updateFavoritesOnly(newValue)
-        clearPhotos()
+        markPendingChanges()
     }
 
     fun clearPhotos() {
         Log.d(TAG, "Clearing all photos")
         viewModelScope.launch {
-            muzeiProvider.clearPhotos()
+            try {
+                // perform clearing on IO
+                withContext(Dispatchers.IO) {
+                    muzeiProvider.clearPhotos()
+                }
+                // notify user on main thread
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(getApplication(), "Clearing photos...", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error clearing photos", e)
+            }
         }
     }
 
@@ -142,6 +160,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateFilterDaysBack(days: Int?) {
         Log.d(TAG, "Updating filter days-back: $days")
         prefs.updateFilterDaysBack(days)
-        clearPhotos()
+        markPendingChanges()
+    }
+
+    /**
+     * Apply pending changes if any (clears cached photos once).
+     * This should be invoked when the user is leaving the settings UI (e.g., Activity.onPause/onStop).
+     */
+    fun applyPendingChangesIfAny(clearIfChanged: Boolean = true) {
+        if (clearIfChanged && hasPendingChanges) {
+            Log.d(TAG, "Settings changed; clearing photos on exit")
+            clearPhotos()
+            hasPendingChanges = false
+        } else {
+            Log.d(TAG, "No pending setting changes or clear disabled; skipping clearPhotos on exit")
+        }
+    }
+
+    private fun markPendingChanges() {
+        hasPendingChanges = true
     }
 }
