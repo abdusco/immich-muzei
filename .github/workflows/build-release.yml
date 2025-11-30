@@ -43,12 +43,19 @@ jobs:
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Grant execute permission for scripts
+        run: |
+          chmod +x ./gradlew
+          chmod +x ./.github/scripts/generate_changelog.sh || true
 
       - name: Decode and setup keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+
+      - name: Generate changelog
+        run: |
+          ./.github/scripts/generate_changelog.sh > CHANGELOG.txt
+          echo "Generated CHANGELOG.txt"
 
       - name: Build Release APK
         env:
@@ -75,7 +82,7 @@ jobs:
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v1
         with:
+          body_path: CHANGELOG.txt
           files: immich/build/outputs/apk/release/immich-${{ steps.version.outputs.version_name }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
