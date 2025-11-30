@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
@@ -61,11 +60,10 @@ import dev.abdus.apps.immich.ui.ImmichImageLoader
 import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
 import dev.abdus.apps.immich.ui.components.FiltersComponent
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun ImmichSettingsScreen(
+fun SettingsScreen(
     viewModel: SettingsViewModel
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -92,8 +90,6 @@ fun ImmichSettingsScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-
-    val iso = DateTimeFormatter.ISO_LOCAL_DATE
 
     ImmichContent(
         state = state,

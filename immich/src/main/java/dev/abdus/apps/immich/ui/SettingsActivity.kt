@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import dev.abdus.apps.immich.ui.screens.ImmichSettingsScreen
+import dev.abdus.apps.immich.ui.screens.SettingsScreen
 
 class SettingsActivity : ComponentActivity() {
     private val viewModel: SettingsViewModel by viewModels()
@@ -17,7 +17,7 @@ class SettingsActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface {
-                    ImmichSettingsScreen(
+                    SettingsScreen(
                         viewModel = viewModel
                     )
                 }
