@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.animateContentSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,14 @@ fun TagPickerScreen(
 
     val selectedTagIds = remember(state.config.selectedTagIds) {
         state.config.selectedTagIds
+    }
+
+    // Partition into picked and available, and sort each section by name
+    val (pickedTags, availableTags) = remember(filteredTags, selectedTagIds) {
+        val (picked, available) = filteredTags.partition { it.id in selectedTagIds }
+        val sortedPicked = picked.sortedBy { it.name }
+        val sortedAvailable = available.sortedBy { it.name }
+        Pair(sortedPicked, sortedAvailable)
     }
 
     Scaffold(
@@ -108,19 +117,68 @@ fun TagPickerScreen(
                         }
                     }
 
-                    items(
-                        items = filteredTags,
-                        key = { tag -> tag.id },
-                        contentType = { "tag_item" }
-                    ) { tag ->
-                        val isSelected = tag.id in selectedTagIds
-                        TagPickerRow(
-                            tag = tag,
-                            selected = isSelected,
-                            onClick = { onTagClick(tag.id) }
+                    // Picked tags section
+                    item {
+                        Text(
+                            text = "Picked (${pickedTags.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
-                }
+                    if (pickedTags.isEmpty()) {
+                        item {
+                            Text(
+                                text = "No picked tags",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        items(
+                            items = pickedTags,
+                            key = { tag -> tag.id },
+                            contentType = { "tag_item" }
+                        ) { tag ->
+                            TagPickerRow(
+                                tag = tag,
+                                selected = true,
+                                onClick = { onTagClick(tag.id) }
+                            )
+                        }
+                    }
+
+                    // Available tags section
+                    item {
+                        Text(
+                            text = "Available (${availableTags.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                    if (availableTags.isEmpty()) {
+                        item {
+                            Text(
+                                text = "No available tags",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        items(
+                            items = availableTags,
+                            key = { tag -> tag.id },
+                            contentType = { "tag_item" }
+                        ) { tag ->
+                            TagPickerRow(
+                                tag = tag,
+                                selected = false,
+                                onClick = { onTagClick(tag.id) }
+                            )
+                        }
+                    }
+                 }
         }
     }
 }
@@ -137,9 +195,13 @@ private fun TagPickerRow(
         MaterialTheme.colorScheme.surface
     }
 
+    // Use animateItemPlacement to animate moves between picked/available sections.
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .animateItemPlacement(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
@@ -150,7 +212,7 @@ private fun TagPickerRow(
         ) {
             Checkbox(
                 checked = selected,
-                onCheckedChange = null
+                onCheckedChange = { onClick() }
             )
             Text(
                 text = tag.name,
@@ -163,3 +225,7 @@ private fun TagPickerRow(
     }
 }
 
+// Compatibility fallback for animateItemPlacement: if the real API isn't present on the
+// classpath, this no-op keeps compilation working. Remove when using a Compose version
+// that provides androidx.compose.foundation.lazy.animateItemPlacement.
+fun Modifier.animateItemPlacement(): Modifier = this

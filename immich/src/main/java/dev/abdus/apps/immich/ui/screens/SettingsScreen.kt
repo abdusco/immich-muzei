@@ -3,6 +3,7 @@ package dev.abdus.apps.immich.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExpandLess
@@ -32,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -49,11 +55,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.background
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.data.ImmichTagUiModel
@@ -435,7 +436,7 @@ private fun SelectedItemsView(
 
                 AnimatedVisibility(visible = !collapsed) {
                     Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Tags
+                        // Tags: show compact summary + action (no per-tag rows here)
                         Column {
                             Text(
                                 text = "Filter by tags",
@@ -458,9 +459,46 @@ private fun SelectedItemsView(
                                     }
                                 }
                             } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    selectedTags.forEach { tag -> SelectedTagRow(tag = tag, onRemove = { onRemoveTag(tag.id) }) }
-                                    Button(onClick = onAddTags, modifier = Modifier.fillMaxWidth()) { Text("+ Add More Tags") }
+                                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                                    Column(modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = when (selectedTags.size) {
+                                                1 -> "1 tag selected"
+                                                else -> "${selectedTags.size} tags selected"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+
+                                        // Show selected tags as chips (up to 3), with a "+N more" chip if there are more
+                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            items(selectedTags.take(3)) { tag ->
+                                                SuggestionChip(
+                                                    enabled = false,
+                                                    onClick = {},
+                                                    label = {
+                                                        Text(tag.name, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                                    }
+                                                )
+                                            }
+                                            if (selectedTags.size > 3) {
+                                                item {
+                                                    SuggestionChip(
+                                                        enabled = false,
+                                                        onClick = {},
+                                                        label = { Text("+${selectedTags.size - 3} more") }
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Button(onClick = onAddTags, modifier = Modifier.fillMaxWidth()) {
+                                            Text("Change Tags")
+                                        }
+                                    }
                                 }
                             }
                         }
