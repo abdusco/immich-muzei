@@ -57,7 +57,7 @@ echo "$HEADER"
 
 echo
 echo "## Features"
-FEATS=$(git log $RANGE --grep='^feat' --pretty=format:"- %s (%h) by %an" || true)
+FEATS=$(git log $RANGE --grep='^feat' --pretty=format:"- %s (%h)" || true)
 if [ -z "$FEATS" ]; then
   echo "- None"
 else
@@ -67,7 +67,7 @@ fi
 
 echo
 echo "## Fixes"
-FIXES=$(git log $RANGE --grep='^fix' --pretty=format:"- %s (%h) by %an" || true)
+FIXES=$(git log $RANGE --grep='^fix' --pretty=format:"- %s (%h)" || true)
 if [ -z "$FIXES" ]; then
   echo "- None"
 else
