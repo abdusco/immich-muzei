@@ -43,8 +43,10 @@ jobs:
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Grant execute permission for scripts
+        run: |
+          chmod +x ./gradlew
+          chmod +x ./.github/scripts/generate_changelog.sh || true
 
       - name: Decode and setup keystore
         run: |
@@ -61,6 +63,11 @@ jobs:
             -Pversion.name=${{ steps.version.outputs.version_name }} \
             -Pversion.code=${{ steps.version.outputs.version_code }}
 
+      - name: Generate changelog
+        run: |
+          ./.github/scripts/generate_changelog.sh > CHANGELOG.txt
+          echo "Generated CHANGELOG.txt"
+
       - name: Rename APK
         run: |
           mv immich/build/outputs/apk/release/immich-release.apk \
@@ -75,7 +82,7 @@ jobs:
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v1
         with:
-          files: immich/build/outputs/apk/release/immich-${{ steps.version.outputs.version_name }}.apk
+          body_path: CHANGELOG.txt
+          files: ${{ steps.find_apk.outputs.apk_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
