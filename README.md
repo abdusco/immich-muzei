@@ -2,74 +2,40 @@
 
 A [Muzei](https://muzei.co/) plugin that displays photos from your [Immich](https://immich.app/) library as your Android wallpaper.
 
-## Features
+## Current features
 
 - Connect to your Immich server using server URL and API key
 - Browse and select albums to display
 - Browse and select tags to filter photos
+- Filter photos by date range
 - Show only favorited photos (optional)
 - Automatically rotates through random photos from selected albums/tags
 - "Open in Immich" action to view the current photo in your Immich instance
 - "Add to favorites" action within Muzei UI
-- **🆕 Home screen shortcut** to favorite the current wallpaper with one tap (Android 7.1+)
 
-## Building
+## Quick start
 
-To build the debug APK:
+Prefer using Android Studio for editing, building and installing the app. Open the project in Android Studio and run the `:immich` module on a device or emulator.
 
-```bash
-./gradlew immich:assembleDebug
-```
+If you need CLI commands, run these from the repository root (fish/zsh/bash):
 
-The APK will be generated at:
-```
-immich/build/outputs/apk/debug/immich-debug.apk
-```
-
-To build the release APK:
+Build debug APK:
 
 ```bash
-./gradlew immich:assembleRelease
+./gradlew :immich:assembleDebug
 ```
 
-To build with a specific version:
+Build release APK:
 
 ```bash
-./gradlew immich:assembleRelease -Pversion.name=1.0.0 -Pversion.code=1
+./gradlew :immich:assembleRelease
 ```
 
-## Releases
+You can also pass version properties for a release build:
 
-Releases are automated via GitHub Actions. To create a release:
-
-**Option 1: Create tag first (recommended)**
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+./gradlew :immich:assembleRelease -Pversion.name=1.0.0 -Pversion.code=1
 ```
-Then create a release on GitHub using that tag.
-
-**Option 2: Create directly from GitHub**
-Create a release (draft or published) on GitHub and specify a tag name (e.g., `v1.0.0`).
-
-When you **create** the release (even as a draft), GitHub Actions will:
-- Automatically build the APK with the version from the tag
-- Attach the APK to the release as `immich-{version}.apk`
-- The version code is automatically set to the GitHub run number
-
-You can then review the APK in the draft and publish when ready.
-
-## Project Structure
-
-- `muzei-api/` - The Muzei API library required for creating Muzei plugins
-- `immich/` - The main Immich plugin module
-
-## Installation
-
-1. Build the APK using the command above
-2. Install the APK on your Android device
-3. Open Muzei and select "Immich" as your wallpaper source
-4. Configure your Immich server URL and authentication in the plugin settings
 
 ## Requirements
 
@@ -83,4 +49,3 @@ You can then review the APK in the draft and publish when ready.
 - Retrofit + OkHttp for API calls
 - Coil for image loading
 - Kotlinx Serialization
-
