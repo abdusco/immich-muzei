@@ -22,41 +22,17 @@ You can download the latest release from the [the releases page](https://github.
 - Show only favorited photos (optional)
 - Automatically rotates through random photos from selected albums/tags
 - "Open in Immich" action to view the current photo in your Immich instance
-- "Add to favorites" action within Muzei UI
+- "Add to favorites" action within Muzei UI and using an app shortcut.
 
-## Quick start
 
-Prefer using Android Studio for editing, building and installing the app. Open the project in Android Studio and run the `:immich` module on a device or emulator.
+## Getting an API key to connect to Immich
 
-If you need CLI commands, run these from the repository root (fish/zsh/bash):
 
-Build debug APK:
-
-```bash
-./gradlew :immich:assembleDebug
-```
-
-Build release APK:
-
-```bash
-./gradlew :immich:assembleRelease
-```
-
-You can also pass version properties for a release build:
-
-```bash
-./gradlew :immich:assembleRelease -Pversion.name=1.0.0 -Pversion.code=1
-```
-
-## Requirements
-
-- Android SDK 23 (Android 6.0) or higher
-- An Immich server instance with API access
-
-## Dependencies
-
-- [Muzei API](https://github.com/muzei/muzei) - 3.4.2 (from Maven Central)
-- Jetpack Compose
-- Retrofit + OkHttp for API calls
-- Coil for image loading
-- Kotlinx Serialization
+1. Log into your Immich web instance.
+2. Go to **Account Settings** by clicking on your profile picture in the top right corner.
+3. Navigate to the **API Keys** section.
+    <img height="400" alt="api keys" src="https://github.com/user-attachments/assets/637e8913-b7b7-441b-8d3f-646a776a9d63" />
+4. Click on **New API Key** and give it a name and add all permissions. Your key stays on the device and is never sent to any third party.
+    <img height="400" alt="immich_2" src="https://github.com/user-attachments/assets/11e1d89f-c824-42dc-906a-76e5c28f5dbc" />
+5. Copy the generated API key and use it in the Immich Muzei plugin to connect to your server.
+    <img height="300" alt="immich_3" src="https://github.com/user-attachments/assets/3304fbee-41e6-4761-a598-cb5976071156" />
