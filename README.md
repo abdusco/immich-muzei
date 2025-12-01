@@ -7,6 +7,12 @@ A [Muzei](https://muzei.co/) plugin that displays photos from your [Immich](http
 <img height="600" alt="immich-muzei-screenshot" src="https://github.com/user-attachments/assets/467b08e0-431f-474c-8285-04382e6b9da5" />
 
 
+
+## Download
+
+You can download the latest release from the [the releases page](https://github.com/abdusco/immich-muzei/releases/latest).
+
+
 ## Current features
 
 - Connect to your Immich server using server URL and API key
