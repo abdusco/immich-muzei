@@ -1,6 +1,11 @@
+![app icon](https://github.com/user-attachments/assets/55bea361-6a4e-44a1-bf95-e8bed641b10a)
+
 # Immich Muzei Plugin
 
 A [Muzei](https://muzei.co/) plugin that displays photos from your [Immich](https://immich.app/) library as your Android wallpaper.
+
+<img height="600" alt="immich-muzei-screenshot" src="https://github.com/user-attachments/assets/467b08e0-431f-474c-8285-04382e6b9da5" />
+
 
 ## Current features
 
