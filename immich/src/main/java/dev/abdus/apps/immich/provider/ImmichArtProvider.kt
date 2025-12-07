@@ -89,7 +89,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
 
         scope.launch {
             try {
-                var assets = repository.fetchRandomAssets(
+                val assets = repository.fetchRandomAssets(
                     albumIds = albumIds,
                     tagIds = tagIds,
                     favoritesOnly = config.favoritesOnly,
@@ -101,8 +101,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
                     return@launch
                 }
 
-                assets = assets.take(3)
-
+                val MAX_ARTWORKS = minOf(assets.size, 6)
                 val artworks = assets.map { asset ->
                     Artwork(
                         token = asset.id,
@@ -110,9 +109,9 @@ class ImmichArtProvider : MuzeiArtProvider() {
                         byline = asset.createdDate(),
                         attribution = asset.id,
                         persistentUri = asset.downloadUrl?.toUri(),
-                        webUri = asset.viewUrl?.toUri()
+                        webUri = asset.viewUrl?.toUri(),
                     )
-                }
+                }.take(MAX_ARTWORKS)
 
                 val addedUris = addArtwork(artworks)
                 Log.d(TAG, "Added ${addedUris.size} artwork URIs")

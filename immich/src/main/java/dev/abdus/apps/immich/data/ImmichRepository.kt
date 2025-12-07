@@ -43,6 +43,7 @@ class ImmichRepository(private val client: ImmichClient) {
         val result = client.getRandomAssets(request)
         result.map {
             it.downloadUrl = client.buildAssetDownloadUrl(it.id)
+            it.previewUrl = client.buildAssetPreviewUrl(it.id)
             it.viewUrl = client.buildAssetViewUrl(it.id)
             it
         }

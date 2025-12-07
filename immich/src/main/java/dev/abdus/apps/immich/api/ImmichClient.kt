@@ -38,11 +38,15 @@ class ImmichClient private constructor(
     private val api: ImmichApi,
 ) : ImmichApi by api {
     fun buildAssetDownloadUrl(assetId: String): String {
-        return "${baseUrl}asset/download/$assetId?apiKey=$apiKey"
+        return "${baseUrl}assets/$assetId/original?apiKey=$apiKey"
+    }
+
+    fun buildAssetPreviewUrl(assetId: String): String {
+        return "${baseUrl}assets/$assetId/thumbnail?size=preview&apiKey=$apiKey"
     }
 
     fun buildAssetThumbnailUrl(assetId: String): String {
-        return "${baseUrl}asset/thumbnail/$assetId?size=thumbnail&apiKey=$apiKey"
+        return "${baseUrl}assets/$assetId/thumbnail&apiKey=$apiKey"
     }
 
     fun buildAssetViewUrl(assetId: String): String {
@@ -127,6 +131,7 @@ data class ImmichAsset(
     val originalPath: String,
     val fileCreatedAt: String? = null,
     var downloadUrl: String? = null,
+    var previewUrl: String? = null,
     var viewUrl: String? = null,
 ) {
     fun createdDate(): String {
