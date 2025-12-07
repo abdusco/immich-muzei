@@ -9,7 +9,7 @@ import dev.abdus.apps.immich.data.AlbumSortBy
 import dev.abdus.apps.immich.data.ImmichAlbumMapper
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.data.ImmichConfig
-import dev.abdus.apps.immich.data.ImmichPreferences
+import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import dev.abdus.apps.immich.provider.MuzeiProvider
 import kotlinx.coroutines.Job
@@ -28,7 +28,7 @@ data class AlbumPickerUiState(
 )
 
 class AlbumPickerViewModel(application: Application) : AndroidViewModel(application) {
-    private val prefs = ImmichPreferences(application)
+    private val prefs = AppPreferences(application)
     private lateinit var repository: ImmichRepository
     private val muzeiProvider = MuzeiProvider(application)
 

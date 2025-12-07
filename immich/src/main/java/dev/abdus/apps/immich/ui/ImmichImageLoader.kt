@@ -6,9 +6,8 @@ import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import coil3.request.CachePolicy
 import coil3.request.crossfade
-import dev.abdus.apps.immich.data.ImmichPreferences
+import dev.abdus.apps.immich.data.AppPreferences
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -16,7 +15,7 @@ import okhttp3.Response
 class ImmichImageLoader {
     companion object {
         fun create(context: Context): ImageLoader {
-            val prefs = ImmichPreferences(context)
+            val prefs = AppPreferences(context)
             val config = prefs.current()
 
             val okHttpClient = OkHttpClient.Builder()

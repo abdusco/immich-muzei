@@ -15,7 +15,7 @@ import com.google.android.apps.muzei.api.provider.MuzeiArtProvider
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.api.UpdateAssetsRequest
-import dev.abdus.apps.immich.data.ImmichPreferences
+import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +28,7 @@ import java.time.format.DateTimeFormatter
 class ImmichArtProvider : MuzeiArtProvider() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var repository: ImmichRepository
+    private lateinit var prefs: AppPreferences
 
     companion object {
         private const val TAG = "ImmichArtProvider"
@@ -38,54 +39,56 @@ class ImmichArtProvider : MuzeiArtProvider() {
         val context = context ?: run {
             return
         }
-        val prefs = ImmichPreferences(context)
+        prefs = AppPreferences(context)
         val config = prefs.current()
 
         if (!config.isConfigured) {
+            Toast.makeText(context, "Immich server is not configured", Toast.LENGTH_SHORT).show()
             return
+        }
+
+        val immichClient = ImmichClient.create(
+            baseUrl = checkNotNull(config.apiBaseUrl),
+            apiKey = checkNotNull(config.apiKey),
+        )
+
+        repository = ImmichRepository(immichClient)
+
+        // Determine which album(s) to fetch from based on selection
+        val selectedAlbumIds = config.selectedAlbumIds.toList()
+        val albumIds = when {
+            selectedAlbumIds.isEmpty() -> {
+                // No albums selected = use all albums
+                null
+            }
+
+            selectedAlbumIds.size == 1 -> {
+                // Single album = use it directly
+                selectedAlbumIds
+            }
+
+            else -> {
+                // Multiple albums = round-robin
+                val index = prefs.getNextAlbumIndex(selectedAlbumIds.size)
+                val currentAlbum = selectedAlbumIds[index]
+                Log.d(TAG, "Round-robin: album ${index + 1}/${selectedAlbumIds.size}: $currentAlbum")
+                listOf(currentAlbum)
+            }
+        }
+
+        val tagIds = config.selectedTagIds.toList().ifEmpty { null }
+        // Include advanced filters for taken-at if configured
+        // Map stored days-back preference to an ISO date string (if present). Prefer days-back when available.
+        val createdAfterIso: String? = config.filterPresetDaysBack?.let { days ->
+            try {
+                LocalDate.now().minusDays(days.toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (_: Exception) {
+                null
+            }
         }
 
         scope.launch {
             try {
-                val immichClient = ImmichClient.create(
-                    baseUrl = checkNotNull(config.apiBaseUrl),
-                    apiKey = checkNotNull(config.apiKey),
-                )
-                repository = ImmichRepository(immichClient)
-
-                // Determine which album(s) to fetch from based on selection
-                val selectedAlbumIds = config.selectedAlbumIds.toList()
-                val albumIds = when {
-                    selectedAlbumIds.isEmpty() -> {
-                        // No albums selected = use all albums
-                        null
-                    }
-
-                    selectedAlbumIds.size == 1 -> {
-                        // Single album = use it directly
-                        selectedAlbumIds
-                    }
-
-                    else -> {
-                        // Multiple albums = round-robin
-                        val index = prefs.getNextAlbumIndex(selectedAlbumIds.size)
-                        val currentAlbum = selectedAlbumIds[index]
-                        Log.d(TAG, "Round-robin: album ${index + 1}/${selectedAlbumIds.size}: $currentAlbum")
-                        listOf(currentAlbum)
-                    }
-                }
-
-                val tagIds = config.selectedTagIds.toList().ifEmpty { null }
-                // Include advanced filters for taken-at if configured
-                // Map stored days-back preference to an ISO date string (if present). Prefer days-back when available.
-                val createdAfterIso: String? = config.filterPresetDaysBack?.let { days ->
-                    try {
-                        LocalDate.now().minusDays(days.toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    } catch (_: Exception) {
-                        null
-                    }
-                }
-
                 var assets = repository.fetchRandomAssets(
                     albumIds = albumIds,
                     tagIds = tagIds,
@@ -131,7 +134,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
         val context = context ?: return emptyList()
 
         // Add "Open in Immich" action if server is configured
-        val prefs = ImmichPreferences(context)
+        val prefs = AppPreferences(context)
         val server = prefs.current().serverUrl
         val assetId = artwork.token
         if (server != null && assetId != null) {
@@ -199,7 +202,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
     class FavoriteReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val assetId = intent.getStringExtra(EXTRA_ASSET_ID) ?: return
-            val prefs = ImmichPreferences(context)
+            val prefs = AppPreferences(context)
             val config = prefs.current()
 
             if (!config.isConfigured) {

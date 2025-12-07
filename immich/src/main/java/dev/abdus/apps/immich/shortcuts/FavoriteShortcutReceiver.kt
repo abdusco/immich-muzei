@@ -8,7 +8,7 @@ import com.google.android.apps.muzei.api.MuzeiContract
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.api.UpdateAssetsRequest
-import dev.abdus.apps.immich.data.ImmichPreferences
+import dev.abdus.apps.immich.data.AppPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -84,7 +84,7 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
         }
 
         // Get config and favorite the asset
-        val prefs = ImmichPreferences(context)
+        val prefs = AppPreferences(context)
         val config = prefs.current()
 
         if (!config.isConfigured) {

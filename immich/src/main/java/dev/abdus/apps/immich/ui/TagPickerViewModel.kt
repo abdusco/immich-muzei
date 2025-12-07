@@ -6,7 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.ImmichConfig
-import dev.abdus.apps.immich.data.ImmichPreferences
+import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import dev.abdus.apps.immich.data.ImmichTagUiModel
 import dev.abdus.apps.immich.provider.MuzeiProvider
@@ -24,7 +24,7 @@ data class TagPickerUiState(
 )
 
 class TagPickerViewModel(application: Application) : AndroidViewModel(application) {
-    private val prefs = ImmichPreferences(application)
+    private val prefs = AppPreferences(application)
     private lateinit var repository: ImmichRepository
     private val muzeiProvider = MuzeiProvider(application)
 

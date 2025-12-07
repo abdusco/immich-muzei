@@ -7,7 +7,7 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichClient
-import dev.abdus.apps.immich.data.ImmichPreferences
+import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.provider.MuzeiProvider
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    private val prefs = ImmichPreferences(application)
+    private val prefs = AppPreferences(application)
     private val muzeiProvider = MuzeiProvider(application)
 
     private val _state = MutableStateFlow(ImmichUiState())

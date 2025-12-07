@@ -24,7 +24,7 @@ private const val KEY_LAST_ALBUM_INDEX = "last_album_index"  // Round-robin trac
 private const val KEY_CACHED_ALBUMS = "cached_albums_json"  // Cached album metadata
 private const val KEY_CACHED_TAGS = "cached_tags_json"  // Cached tag metadata
 
-class ImmichPreferences(context: Context) {
+class AppPreferences(context: Context) {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
