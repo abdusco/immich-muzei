@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.google.android.apps.muzei.api.MuzeiContract
-import com.google.android.apps.muzei.api.provider.ProviderContract
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichService
 import dev.abdus.apps.immich.data.ImmichPreferences
@@ -24,6 +23,7 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
         private const val TAG = "FavoriteShortcutReceiver"
         private const val IMMICH_AUTHORITY = "dev.abdus.apps.immich"
         const val ACTION_FAVORITE = "dev.abdus.apps.immich.ACTION_FAVORITE_CURRENT"
+        const val ACTION_ASSET_FAVORITED = "dev.abdus.apps.immich.ACTION_ASSET_FAVORITED"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -82,13 +82,9 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
             return
         }
 
-        Log.d(TAG, "Got asset ID: $assetId")
-
         // Get config and favorite the asset
         val prefs = ImmichPreferences(context)
         val config = prefs.current()
-
-        Log.d(TAG, "Config: isConfigured=${config.isConfigured}, serverUrl=${config.serverUrl}, apiBaseUrl=${config.apiBaseUrl}")
 
         if (!config.isConfigured) {
             Log.e(TAG, "Immich is not configured")
@@ -110,6 +106,10 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
                     )
                 )
                 Log.d(TAG, "Successfully favorited asset")
+                val broadcastIntent = Intent(ACTION_ASSET_FAVORITED).apply {
+                    putExtra("asset_id", assetId)
+                }
+                context.sendBroadcast(broadcastIntent)
                 withContext(Dispatchers.Main) {
                     Log.d(TAG, "Showing success toast via ToastActivity")
                     showToast(context, context.getString(R.string.immich_favorite_success))
@@ -120,31 +120,6 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
                     showToast(context, "API error: ${e.message ?: "Unknown error"}")
                 }
             }
-        }
-    }
-
-    private fun getAssetIdFromProvider(context: Context, artworkId: Long): String? {
-        return try {
-            Log.d(TAG, "Getting asset ID using ProviderClient (ignoring artworkId $artworkId)")
-
-            // Use ProviderClient to get artwork from the Immich provider
-            val client = ProviderContract.getProviderClient(context, IMMICH_AUTHORITY)
-
-            // Get the last added artwork (should be the current one)
-            val lastArtwork = client.lastAddedArtwork
-            Log.d(TAG, "Last artwork from ProviderClient: token=${lastArtwork?.token}, title=${lastArtwork?.title}")
-
-            if (lastArtwork?.token != null) {
-                Log.d(TAG, "Successfully found token via ProviderClient: ${lastArtwork.token}")
-                return lastArtwork.token
-            } else {
-                Log.w(TAG, "ProviderClient returned null or artwork has no token")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get artwork from ProviderClient: ${e.message}", e)
-            e.printStackTrace()
-            null
         }
     }
 
