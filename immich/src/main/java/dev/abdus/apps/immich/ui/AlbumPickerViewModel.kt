@@ -129,18 +129,13 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
         loadJob = viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
             try {
-                Log.d(TAG, "Loading albums from ${config.apiBaseUrl}")
-
                 val albums = repository.fetchAlbums()
-                Log.d(TAG, "Fetched ${albums.size} albums")
                 val uiAlbums = albums.map { album ->
                     val mapped = ImmichAlbumMapper.toUiModel(album, config.serverUrl!!, config.apiKey!!)
-                    Log.d(TAG, "Album: ${album.albumName}, coverUrl=${mapped.coverUrl}")
                     mapped
                 }
 
                 prefs.saveCachedAlbums(uiAlbums)
-                Log.d(TAG, "Cached ${uiAlbums.size} albums")
 
                 _state.value = _state.value.copy(
                     albums = uiAlbums,

@@ -37,13 +37,23 @@ class ImmichClient private constructor(
     val apiKey: String,
     private val api: ImmichApi,
 ) : ImmichApi by api {
-    fun buildAssetDownloadURL(assetId: String): String {
-        val url = if (baseUrl.endsWith('/')) baseUrl else "$baseUrl/"
-        return "${url}asset/download/$assetId?apiKey=$apiKey"
+    fun buildAssetDownloadUrl(assetId: String): String {
+        return "${baseUrl}asset/download/$assetId?apiKey=$apiKey"
+    }
+
+    fun buildAssetThumbnailUrl(assetId: String): String {
+        return "${baseUrl}asset/thumbnail/$assetId?size=thumbnail&apiKey=$apiKey"
+    }
+
+    fun buildAssetViewUrl(assetId: String): String {
+        return "${baseUrl}photos/$assetId"
     }
 
     companion object {
         fun create(baseUrl: String, apiKey: String): ImmichClient {
+            val baseUrlClean = baseUrl.trimEnd('/') + "/"
+            val apiKeyClean = apiKey.trim()
+
             val json = Json {
                 ignoreUnknownKeys = true
                 encodeDefaults = true  // Changed to true so size parameter is sent
@@ -53,17 +63,18 @@ class ImmichClient private constructor(
                 level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
             }
             val client = OkHttpClient.Builder()
-                .addInterceptor(ApiKeyInterceptor(apiKey))
+                .addInterceptor(ApiKeyInterceptor(apiKeyClean))
                 .addInterceptor(loggingInterceptor)
                 .build()
 
             val retrofitApi = Retrofit.Builder()
-                .baseUrl(baseUrl)
+                .baseUrl(baseUrlClean)
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .client(client)
                 .build()
                 .create(ImmichApi::class.java)
-            return ImmichClient(baseUrl, apiKey, retrofitApi)
+
+            return ImmichClient(baseUrlClean, apiKeyClean, retrofitApi)
         }
     }
 }
@@ -92,6 +103,7 @@ data class ImmichAlbum(
     val id: String,
     val albumName: String,
     val albumThumbnailAssetId: String?,
+    var albumThumbnailAssetThumbnailUrl: String?,
     val assetCount: Int,
     val updatedAt: String? = null,
     val lastModifiedAssetTimestamp: String? = null
@@ -114,7 +126,13 @@ data class ImmichAsset(
     val resized: Boolean? = null,
     val originalPath: String,
     val fileCreatedAt: String? = null,
-)
+    var downloadUrl: String? = null,
+    var viewUrl: String? = null,
+) {
+    fun createdDate(): String {
+        return fileCreatedAt?.substringBefore('T') ?: "Unknown"
+    }
+}
 
 private class ApiKeyInterceptor(
     private val apiKey: String

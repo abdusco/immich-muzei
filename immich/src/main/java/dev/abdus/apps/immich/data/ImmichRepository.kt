@@ -12,8 +12,15 @@ class ImmichRepository(private val client: ImmichClient) {
         private const val TAG = "ImmichRepository"
     }
 
-    suspend fun fetchAlbums(): List<ImmichAlbum> =
-        withContext(Dispatchers.IO) { client.getAlbums() }
+    suspend fun fetchAlbums(): List<ImmichAlbum> {
+        val result = withContext(Dispatchers.IO) { client.getAlbums() }
+        return result.map {
+            if (it.albumThumbnailAssetId != null) {
+               it.albumThumbnailAssetThumbnailUrl = client.buildAssetThumbnailUrl(it.albumThumbnailAssetId)
+            }
+            it
+        }
+    }
 
     suspend fun fetchTags(): List<dev.abdus.apps.immich.api.ImmichTag> =
         withContext(Dispatchers.IO) { client.getTags() }
@@ -33,9 +40,11 @@ class ImmichRepository(private val client: ImmichClient) {
             createdAfter = createdAfter,
             createdBefore = createdBefore
         )
-        android.util.Log.d(TAG, "Fetching random assets with albumIds: ${request.albumIds}, tagIds: ${request.tagIds}, size: ${request.size}, isFavorite: ${request.isFavorite}, createdAfter: ${request.createdAfter}, createdBefore: ${request.createdBefore}")
         val result = client.getRandomAssets(request)
-        android.util.Log.d(TAG, "Response: ${result.size} assets")
-        result
+        result.map {
+            it.downloadUrl = client.buildAssetDownloadUrl(it.id)
+            it.viewUrl = client.buildAssetViewUrl(it.id)
+            it
+        }
     }
 }

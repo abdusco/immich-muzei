@@ -35,52 +35,47 @@ class ImmichArtProvider : MuzeiArtProvider() {
     }
 
     override fun onLoadRequested(initial: Boolean) {
-        Log.d(TAG, "onLoadRequested called, initial=$initial")
         val context = context ?: run {
-            Log.e(TAG, "Context is null")
             return
         }
         val prefs = ImmichPreferences(context)
         val config = prefs.current()
 
         if (!config.isConfigured) {
-            Log.w(TAG, "Not configured")
             return
         }
 
         scope.launch {
             try {
-                Log.d(TAG, "Creating Immich service with baseUrl=${config.apiBaseUrl}")
-                val service = ImmichClient.create(
+                val immichClient = ImmichClient.create(
                     baseUrl = checkNotNull(config.apiBaseUrl),
-                    apiKey = config.apiKey!!
+                    apiKey = checkNotNull(config.apiKey),
                 )
-                repository = ImmichRepository(service)
+                repository = ImmichRepository(immichClient)
 
                 // Determine which album(s) to fetch from based on selection
-                val selectedAlbums = config.selectedAlbumIds.toList()
-                val albumList = when {
-                    selectedAlbums.isEmpty() -> {
+                val selectedAlbumIds = config.selectedAlbumIds.toList()
+                val albumIds = when {
+                    selectedAlbumIds.isEmpty() -> {
                         // No albums selected = use all albums
-                        Log.d(TAG, "No albums selected, using all albums")
                         null
                     }
-                    selectedAlbums.size == 1 -> {
+
+                    selectedAlbumIds.size == 1 -> {
                         // Single album = use it directly
-                        Log.d(TAG, "Single album selected: ${selectedAlbums[0]}")
-                        selectedAlbums
+                        selectedAlbumIds
                     }
+
                     else -> {
                         // Multiple albums = round-robin
-                        val index = prefs.getNextAlbumIndex(selectedAlbums.size)
-                        val currentAlbum = selectedAlbums[index]
-                        Log.d(TAG, "Round-robin: album ${index + 1}/${selectedAlbums.size}: $currentAlbum")
+                        val index = prefs.getNextAlbumIndex(selectedAlbumIds.size)
+                        val currentAlbum = selectedAlbumIds[index]
+                        Log.d(TAG, "Round-robin: album ${index + 1}/${selectedAlbumIds.size}: $currentAlbum")
                         listOf(currentAlbum)
                     }
                 }
 
-                val tagList = config.selectedTagIds.toList().ifEmpty { null }
-                Log.d(TAG, "Fetching random asset with ${albumList?.size ?: "all"} album(s), ${tagList?.size ?: "all"} tag(s), favoritesOnly: ${config.favoritesOnly}")
+                val tagIds = config.selectedTagIds.toList().ifEmpty { null }
                 // Include advanced filters for taken-at if configured
                 // Map stored days-back preference to an ISO date string (if present). Prefer days-back when available.
                 val createdAfterIso: String? = config.filterPresetDaysBack?.let { days ->
@@ -92,29 +87,27 @@ class ImmichArtProvider : MuzeiArtProvider() {
                 }
 
                 var assets = repository.fetchRandomAssets(
-                    albumList,
-                    tagList,
-                    config.favoritesOnly,
-                    createdAfterIso,
-                    config.createdBefore
+                    albumIds = albumIds,
+                    tagIds = tagIds,
+                    favoritesOnly = config.favoritesOnly,
+                    createdAfter = createdAfterIso,
+                    createdBefore = config.createdBefore
                 )
 
                 if (assets.isEmpty()) {
-                    Log.w(TAG, "No asset returned from API")
                     return@launch
                 }
 
                 assets = assets.take(3)
 
                 val artworks = assets.map { asset ->
-                    val imageUrl = buildAssetDownloadUrl(checkNotNull(config.serverUrl), asset.id, checkNotNull(config.apiKey))
                     Artwork(
                         token = asset.id,
                         title = asset.originalFileName,
-                        byline = asset.fileCreatedAt.let { v -> v?.substringBefore('T') },
+                        byline = asset.createdDate(),
                         attribution = asset.id,
-                        persistentUri = imageUrl.toUri(),
-                        webUri = buildAssetViewUrl(checkNotNull(config.serverUrl), asset.id).toUri()
+                        persistentUri = asset.downloadUrl?.toUri(),
+                        webUri = asset.viewUrl?.toUri()
                     )
                 }
 
@@ -199,9 +192,6 @@ class ImmichArtProvider : MuzeiArtProvider() {
             setShouldShowIcon(false)
         }
     }
-
-    private fun buildAssetDownloadUrl(server: String, assetId: String, apiKey: String): String =
-        server.removeSuffix("/") + "/api/assets/$assetId/original?apiKey=$apiKey"
 
     private fun buildAssetViewUrl(server: String, assetId: String): String =
         server.removeSuffix("/") + "/photos/$assetId"
