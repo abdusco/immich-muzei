@@ -13,7 +13,7 @@ import androidx.core.net.toUri
 import com.google.android.apps.muzei.api.provider.Artwork
 import com.google.android.apps.muzei.api.provider.MuzeiArtProvider
 import dev.abdus.apps.immich.R
-import dev.abdus.apps.immich.api.ImmichService
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.ImmichPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import kotlinx.coroutines.CoroutineScope
@@ -50,7 +50,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
         scope.launch {
             try {
                 Log.d(TAG, "Creating Immich service with baseUrl=${config.apiBaseUrl}")
-                val service = ImmichService.create(
+                val service = ImmichClient.create(
                     baseUrl = checkNotNull(config.apiBaseUrl),
                     apiKey = config.apiKey!!
                 )
@@ -218,12 +218,12 @@ class ImmichArtProvider : MuzeiArtProvider() {
 
             CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
                 try {
-                    val service = ImmichService.create(
+                    val service = ImmichClient.create(
                         baseUrl = checkNotNull(config.apiBaseUrl),
                         apiKey = checkNotNull(config.apiKey)
                     )
                     service.updateAssets(
-                        ImmichService.UpdateAssetsRequest(
+                        ImmichClient.UpdateAssetsRequest(
                             ids = listOf(assetId),
                             isFavorite = true
                         )

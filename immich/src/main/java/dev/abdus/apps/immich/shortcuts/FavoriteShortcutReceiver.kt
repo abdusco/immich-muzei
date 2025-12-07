@@ -6,7 +6,7 @@ import android.content.Intent
 import android.util.Log
 import com.google.android.apps.muzei.api.MuzeiContract
 import dev.abdus.apps.immich.R
-import dev.abdus.apps.immich.api.ImmichService
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.ImmichPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -95,12 +95,12 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
         withContext(Dispatchers.IO) {
             try {
                 Log.d(TAG, "Creating service and calling updateAssets API")
-                val service = ImmichService.create(
+                val service = ImmichClient.create(
                     baseUrl = checkNotNull(config.apiBaseUrl),
                     apiKey = checkNotNull(config.apiKey)
                 )
                 service.updateAssets(
-                    ImmichService.UpdateAssetsRequest(
+                    ImmichClient.UpdateAssetsRequest(
                         ids = listOf(assetId),
                         isFavorite = true
                     )

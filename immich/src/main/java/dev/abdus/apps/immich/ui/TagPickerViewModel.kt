@@ -4,7 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import dev.abdus.apps.immich.api.ImmichService
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.ImmichPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
@@ -105,7 +105,7 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
             try {
                 Log.d(TAG, "Loading tags from ${config.apiBaseUrl}")
-                val service = ImmichService.create(
+                val service = ImmichClient.create(
                     baseUrl = checkNotNull(config.apiBaseUrl),
                     apiKey = config.apiKey!!
                 )

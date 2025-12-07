@@ -6,7 +6,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import dev.abdus.apps.immich.api.ImmichService
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.ImmichPreferences
 import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.provider.MuzeiProvider
@@ -118,7 +118,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val finalUrl = if (baseUrl.endsWith('/')) baseUrl else "$baseUrl/"
 
             Log.d(TAG, "Testing credentials with URL: $finalUrl")
-            val service = ImmichService.create(finalUrl, apiKey.trim())
+            val service = ImmichClient.create(finalUrl, apiKey.trim())
             val response = service.getServerInfo()
 
             // Prettify JSON response

@@ -11,10 +11,11 @@ import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 private const val HEADER_API_KEY = "x-api-key"
 
-interface ImmichService {
+interface ImmichClient {
     @GET("server/about")
     suspend fun getServerInfo(): kotlinx.serialization.json.JsonObject
 
@@ -25,13 +26,13 @@ interface ImmichService {
     suspend fun getTags(): List<ImmichTag>
 
     @POST("search/random")
-    suspend fun getRandomAssets(@Body request: RandomRequest): List<ImmichAsset>
+    suspend fun getRandomAssets(@Body request: SearchRandomRequest): List<ImmichAsset>
 
-    @retrofit2.http.PUT("assets")
+    @PUT("assets")
     suspend fun updateAssets(@Body request: UpdateAssetsRequest)
 
     @Serializable
-    data class RandomRequest(
+    data class SearchRandomRequest(
         val albumIds: List<String>? = null,
         val tagIds: List<String>? = null,
         val size: Int = 10,
@@ -49,7 +50,7 @@ interface ImmichService {
     )
 
     companion object {
-        fun create(baseUrl: String, apiKey: String): ImmichService {
+        fun create(baseUrl: String, apiKey: String): ImmichClient {
             val json = Json {
                 ignoreUnknownKeys = true
                 encodeDefaults = true  // Changed to true so size parameter is sent
@@ -67,7 +68,7 @@ interface ImmichService {
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .client(client)
                 .build()
-                .create(ImmichService::class.java)
+                .create(ImmichClient::class.java)
         }
     }
 }

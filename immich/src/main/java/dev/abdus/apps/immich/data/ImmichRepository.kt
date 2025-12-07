@@ -2,7 +2,7 @@ package dev.abdus.apps.immich.data
 
 import dev.abdus.apps.immich.api.ImmichAlbum
 import dev.abdus.apps.immich.api.ImmichAsset
-import dev.abdus.apps.immich.api.ImmichService
+import dev.abdus.apps.immich.api.ImmichClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -11,21 +11,21 @@ class ImmichRepository {
         private const val TAG = "ImmichRepository"
     }
 
-    suspend fun fetchAlbums(service: ImmichService): List<ImmichAlbum> =
+    suspend fun fetchAlbums(service: ImmichClient): List<ImmichAlbum> =
         withContext(Dispatchers.IO) { service.getAlbums() }
 
-    suspend fun fetchTags(service: ImmichService): List<dev.abdus.apps.immich.api.ImmichTag> =
+    suspend fun fetchTags(service: ImmichClient): List<dev.abdus.apps.immich.api.ImmichTag> =
         withContext(Dispatchers.IO) { service.getTags() }
 
     suspend fun fetchRandomAssets(
-        service: ImmichService,
+        service: ImmichClient,
         albumIds: List<String>?,
         tagIds: List<String>?,
         favoritesOnly: Boolean = false,
         createdAfter: String? = null,
         createdBefore: String? = null
     ): List<ImmichAsset> = withContext(Dispatchers.IO) {
-        val request = ImmichService.RandomRequest(
+        val request = ImmichClient.SearchRandomRequest(
             albumIds = albumIds,
             tagIds = tagIds,
             size = 10,

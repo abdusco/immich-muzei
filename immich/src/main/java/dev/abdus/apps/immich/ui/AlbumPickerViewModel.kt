@@ -4,7 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import dev.abdus.apps.immich.api.ImmichService
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.AlbumSortBy
 import dev.abdus.apps.immich.data.ImmichAlbumMapper
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
@@ -120,7 +120,7 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
             try {
                 Log.d(TAG, "Loading albums from ${config.apiBaseUrl}")
-                val service = ImmichService.create(
+                val service = ImmichClient.create(
                     baseUrl = checkNotNull(config.apiBaseUrl),
                     apiKey = config.apiKey!!
                 )

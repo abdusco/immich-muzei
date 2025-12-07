@@ -41,13 +41,6 @@ class ImmichPreferences(context: Context) {
         }
     }
 
-    @Deprecated("Use updateSelectedAlbums instead")
-    fun updateSelectedAlbum(id: String?) {
-        // Migrate to new multi-album format
-        val albums = if (id != null) setOf(id) else emptySet()
-        updateSelectedAlbums(albums)
-    }
-
     fun updateSelectedAlbums(ids: Set<String>) {
         prefs.edit {
             putStringSet(KEY_SELECTED_ALBUMS, ids)
