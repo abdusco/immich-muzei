@@ -15,7 +15,7 @@ import retrofit2.http.PUT
 
 private const val HEADER_API_KEY = "x-api-key"
 
-interface ImmichClient {
+interface ImmichApi {
     @GET("server/about")
     suspend fun getServerInfo(): kotlinx.serialization.json.JsonObject
 
@@ -30,24 +30,17 @@ interface ImmichClient {
 
     @PUT("assets")
     suspend fun updateAssets(@Body request: UpdateAssetsRequest)
+}
 
-    @Serializable
-    data class SearchRandomRequest(
-        val albumIds: List<String>? = null,
-        val tagIds: List<String>? = null,
-        val size: Int = 10,
-        val isFavorite: Boolean? = null,
-        // Filter assets created after this timestamp (ISO-8601 string expected by the API)
-        val createdAfter: String? = null,
-        // Filter assets created before this timestamp (ISO-8601 string expected by the API)
-        val createdBefore: String? = null
-    )
-
-    @Serializable
-    data class UpdateAssetsRequest(
-        val ids: List<String>,
-        val isFavorite: Boolean? = null
-    )
+class ImmichClient private constructor(
+    val baseUrl: String,
+    val apiKey: String,
+    private val api: ImmichApi,
+) : ImmichApi by api {
+    fun buildAssetDownloadURL(assetId: String): String {
+        val url = if (baseUrl.endsWith('/')) baseUrl else "$baseUrl/"
+        return "${url}asset/download/$assetId?apiKey=$apiKey"
+    }
 
     companion object {
         fun create(baseUrl: String, apiKey: String): ImmichClient {
@@ -63,15 +56,36 @@ interface ImmichClient {
                 .addInterceptor(ApiKeyInterceptor(apiKey))
                 .addInterceptor(loggingInterceptor)
                 .build()
-            return Retrofit.Builder()
+
+            val retrofitApi = Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .client(client)
                 .build()
-                .create(ImmichClient::class.java)
+                .create(ImmichApi::class.java)
+            return ImmichClient(baseUrl, apiKey, retrofitApi)
         }
     }
 }
+
+@Serializable
+data class SearchRandomRequest(
+    val albumIds: List<String>? = null,
+    val tagIds: List<String>? = null,
+    val size: Int = 10,
+    val isFavorite: Boolean? = null,
+    // Filter assets created after this timestamp (ISO-8601 string expected by the API)
+    val createdAfter: String? = null,
+    // Filter assets created before this timestamp (ISO-8601 string expected by the API)
+    val createdBefore: String? = null
+)
+
+@Serializable
+data class UpdateAssetsRequest(
+    val ids: List<String>,
+    val isFavorite: Boolean? = null
+)
+
 
 @Serializable
 data class ImmichAlbum(
@@ -99,7 +113,7 @@ data class ImmichAsset(
     val ownerId: String? = null,
     val resized: Boolean? = null,
     val originalPath: String,
-    val fileCreatedAt: String? = null
+    val fileCreatedAt: String? = null,
 )
 
 private class ApiKeyInterceptor(
@@ -112,4 +126,3 @@ private class ApiKeyInterceptor(
         return chain.proceed(newRequest)
     }
 }
-

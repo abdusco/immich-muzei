@@ -7,6 +7,7 @@ import android.util.Log
 import com.google.android.apps.muzei.api.MuzeiContract
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
+import dev.abdus.apps.immich.api.UpdateAssetsRequest
 import dev.abdus.apps.immich.data.ImmichPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -100,7 +101,7 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
                     apiKey = checkNotNull(config.apiKey)
                 )
                 service.updateAssets(
-                    ImmichClient.UpdateAssetsRequest(
+                    UpdateAssetsRequest(
                         ids = listOf(assetId),
                         isFavorite = true
                     )

@@ -25,7 +25,7 @@ data class TagPickerUiState(
 
 class TagPickerViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = ImmichPreferences(application)
-    private val repository = ImmichRepository()
+    private lateinit var repository: ImmichRepository
     private val muzeiProvider = MuzeiProvider(application)
 
     private val _state = MutableStateFlow(TagPickerUiState())
@@ -47,6 +47,14 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
                 val oldConfig = _state.value.config
                 _state.value = _state.value.copy(config = config)
 
+                if (config.isConfigured) {
+                    val service = ImmichClient.create(
+                        baseUrl = checkNotNull(config.apiBaseUrl),
+                        apiKey = config.apiKey!!
+                    )
+                    repository = ImmichRepository(service)
+                }
+
                 // Clear cached data if credentials changed
                 if (config.serverUrl != oldConfig.serverUrl || config.apiKey != oldConfig.apiKey) {
                     if (!config.isConfigured) {
@@ -66,7 +74,8 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
     fun refreshFromApi() {
         val config = _state.value.config
         if (!config.isConfigured) return
-        loadTags(config)
+        if (!::repository.isInitialized) return // Add a check here
+        loadTags()
     }
 
     fun toggleTag(id: String) {
@@ -98,19 +107,16 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun loadTags(config: ImmichConfig) {
+    private fun loadTags() {
+        val config = _state.value.config
         if (!config.isConfigured) return
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
             try {
                 Log.d(TAG, "Loading tags from ${config.apiBaseUrl}")
-                val service = ImmichClient.create(
-                    baseUrl = checkNotNull(config.apiBaseUrl),
-                    apiKey = config.apiKey!!
-                )
 
-                val tags = repository.fetchTags(service)
+                val tags = repository.fetchTags()
                 Log.d(TAG, "Fetched ${tags.size} tags")
                 val uiTags = tags.map { tag ->
                     ImmichTagUiModel(

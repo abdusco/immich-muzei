@@ -14,6 +14,7 @@ import com.google.android.apps.muzei.api.provider.Artwork
 import com.google.android.apps.muzei.api.provider.MuzeiArtProvider
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
+import dev.abdus.apps.immich.api.UpdateAssetsRequest
 import dev.abdus.apps.immich.data.ImmichPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,7 @@ import java.time.format.DateTimeFormatter
 
 class ImmichArtProvider : MuzeiArtProvider() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val repository = ImmichRepository()
+    private lateinit var repository: ImmichRepository
 
     companion object {
         private const val TAG = "ImmichArtProvider"
@@ -54,6 +55,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
                     baseUrl = checkNotNull(config.apiBaseUrl),
                     apiKey = config.apiKey!!
                 )
+                repository = ImmichRepository(service)
 
                 // Determine which album(s) to fetch from based on selection
                 val selectedAlbums = config.selectedAlbumIds.toList()
@@ -90,7 +92,6 @@ class ImmichArtProvider : MuzeiArtProvider() {
                 }
 
                 var assets = repository.fetchRandomAssets(
-                    service,
                     albumList,
                     tagList,
                     config.favoritesOnly,
@@ -223,7 +224,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
                         apiKey = checkNotNull(config.apiKey)
                     )
                     service.updateAssets(
-                        ImmichClient.UpdateAssetsRequest(
+                        UpdateAssetsRequest(
                             ids = listOf(assetId),
                             isFavorite = true
                         )
