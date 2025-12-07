@@ -23,6 +23,7 @@ class ConfigActivity : ComponentActivity() {
                     onBack = { finish() },
                     onSave = { url, key ->
                         viewModel.updateCredentials(url, key)
+                        setResult(RESULT_OK)
                         finish()
                     },
                     onTest = viewModel::testCredentials

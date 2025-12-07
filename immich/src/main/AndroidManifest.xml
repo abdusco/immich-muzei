@@ -36,7 +36,7 @@
 
         <activity
             android:name="dev.abdus.apps.immich.ui.ConfigActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@android:style/Theme.Material.NoActionBar"
             android:parentActivityName="dev.abdus.apps.immich.ui.SettingsActivity" />
 
@@ -85,6 +85,14 @@
             <intent-filter>
                 <action android:name="com.google.android.apps.muzei.api.MuzeiArtProvider" />
             </intent-filter>
+
+            <meta-data
+                android:name="settingsActivity"
+                android:value="dev.abdus.apps.immich.ui.SettingsActivity" />
+
+            <meta-data
+                android:name="setupActivity"
+                android:value="dev.abdus.apps.immich.ui.ConfigActivity" />
         </provider>
 
         <provider
