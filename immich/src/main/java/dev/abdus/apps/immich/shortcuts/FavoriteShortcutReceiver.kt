@@ -96,11 +96,11 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
         withContext(Dispatchers.IO) {
             try {
                 Log.d(TAG, "Creating service and calling updateAssets API")
-                val service = ImmichClient.create(
+                val immichClient = ImmichClient.create(
                     baseUrl = checkNotNull(config.apiBaseUrl),
                     apiKey = checkNotNull(config.apiKey)
                 )
-                service.updateAssets(
+                immichClient.updateAssets(
                     UpdateAssetsRequest(
                         ids = listOf(assetId),
                         isFavorite = true
@@ -109,6 +109,8 @@ class FavoriteShortcutReceiver : BroadcastReceiver() {
                 Log.d(TAG, "Successfully favorited asset")
                 val broadcastIntent = Intent(ACTION_ASSET_FAVORITED).apply {
                     putExtra("asset_id", assetId)
+                    putExtra("asset_download_url", immichClient.buildAssetDownloadUrl(assetId))
+                    putExtra("asset_original_file_name", artwork.title)
                 }
                 context.sendBroadcast(broadcastIntent)
                 withContext(Dispatchers.Main) {
