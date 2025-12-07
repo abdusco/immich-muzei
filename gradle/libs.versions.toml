@@ -71,6 +71,7 @@ okhttpCoroutines = "1.0"
 retrofit = "3.0.0"
 subsampling = "3.10.0"
 tasker = "0.4.10"
+desugar = "2.0.4"
 
 [libraries]
 
@@ -160,6 +161,7 @@ retrofit-kotlinx-serialization = { group = "com.jakewharton.retrofit", name = "r
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.9.0" }
 subsampling = { group = "com.davemorrissey.labs", name = "subsampling-scale-image-view-androidx", version.ref = "subsampling" }
 tasker = { group = "com.joaomgcd", name = "taskerpluginlibrary", version.ref = "tasker" }
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar" }
 
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
