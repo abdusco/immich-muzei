@@ -22,19 +22,29 @@ android {
         targetSdkVersion libs.versions.targetSdk.get()
         versionCode project.hasProperty('version.code') ? project.property('version.code').toInteger() : 1
         versionName project.hasProperty('version.name') ? project.property('version.name') : '1.0.0'
-
-
     }
 
-    def keystorePath = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE")
+    def keystorePropertiesFile = rootProject.file("keystore.properties")
+    def keystoreProperties = new Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    }
+
+    def keystorePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties['storeFile'] ?: project.findProperty("KEYSTORE_FILE")
 
     signingConfigs {
         if (keystorePath) {
             release {
                 storeFile file(keystorePath)
-                storePassword System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD")
-                keyAlias System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")
-                keyPassword System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: project.findProperty("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: project.findProperty("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: project.findProperty("KEY_PASSWORD")
+            }
+            debug {
+                storeFile file(keystorePath)
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: project.findProperty("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: project.findProperty("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: project.findProperty("KEY_PASSWORD")
             }
         }
     }
@@ -44,6 +54,11 @@ android {
             minifyEnabled false
             if (keystorePath) {
                 signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            if (keystorePath) {
+                signingConfig signingConfigs.debug
             }
         }
     }

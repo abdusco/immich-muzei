@@ -1,6 +1,7 @@
 *.iml
 .gradle
 /local.properties
+/keystore.properties
 /.idea
 .DS_Store
 /build
@@ -49,4 +50,3 @@ lint/outputs/
 lint/tmp/
 lint-results*.html
 lint-results*.xml
-
