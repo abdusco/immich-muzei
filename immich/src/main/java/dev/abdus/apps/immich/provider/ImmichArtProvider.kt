@@ -2,7 +2,6 @@ package dev.abdus.apps.immich.provider
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -14,9 +13,9 @@ import com.google.android.apps.muzei.api.provider.Artwork
 import com.google.android.apps.muzei.api.provider.MuzeiArtProvider
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
-import dev.abdus.apps.immich.api.UpdateAssetsRequest
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
+import dev.abdus.apps.immich.shortcuts.FavoriteReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -132,24 +131,31 @@ class ImmichArtProvider : MuzeiArtProvider() {
     override fun getCommandActions(artwork: Artwork): List<RemoteActionCompat> {
         val context = context ?: return emptyList()
 
-        // Add "Open in Immich" action if server is configured
-        val prefs = AppPreferences(context)
-        val server = prefs.current().serverUrl
-        val assetId = artwork.token
-        if (server != null && assetId != null) {
-            val uri = "$server/photos/$assetId".toUri()
-            return listOf(
-                createOpenInImmichAction(uri),
-                createFavoriteAction(assetId)
-            )
+        if (artwork.token.isNullOrEmpty()) {
+            return emptyList()
         }
 
-        return emptyList()
+        return listOf(
+            createOpenInImmichAction(context, artwork),
+            createFavoriteAction(context, artwork)
+        )
     }
 
     @SuppressLint("InlinedApi")
-    private fun createOpenInImmichAction(uri: android.net.Uri): RemoteActionCompat {
-        val context = context ?: throw IllegalStateException("Context missing")
+    private fun createOpenInImmichAction(context: Context, artwork: Artwork): RemoteActionCompat {
+        val assetId = artwork.token!!
+
+        // Add "Open in Immich" action if server is configured
+        val prefs = AppPreferences(context)
+        val config = prefs.current()
+
+
+        val immichClient = ImmichClient.create(
+            baseUrl = checkNotNull(config.apiBaseUrl),
+            apiKey = checkNotNull(config.apiKey)
+        )
+        val uri = immichClient.buildAssetViewUrl(assetId).toUri()
+
         val intent = Intent(Intent.ACTION_VIEW, uri)
         val title = context.getString(R.string.immich_action_open)
         return RemoteActionCompat(
@@ -171,8 +177,18 @@ class ImmichArtProvider : MuzeiArtProvider() {
     }
 
     @SuppressLint("InlinedApi")
-    private fun createFavoriteAction(assetId: String): RemoteActionCompat {
-        val context = context ?: throw IllegalStateException("Context missing")
+    private fun createFavoriteAction(context: Context, artwork: Artwork): RemoteActionCompat {
+        val assetId = artwork.token!!
+
+        // Add "Open in Immich" action if server is configured
+        val prefs = AppPreferences(context)
+        val config = prefs.current()
+
+        val immichClient = ImmichClient.create(
+            baseUrl = checkNotNull(config.apiBaseUrl),
+            apiKey = checkNotNull(config.apiKey)
+        )
+
         val intent = Intent(context, FavoriteReceiver::class.java).apply {
             putExtra(EXTRA_ASSET_ID, assetId)
         }
@@ -192,45 +208,6 @@ class ImmichArtProvider : MuzeiArtProvider() {
             )
         ).apply {
             setShouldShowIcon(false)
-        }
-    }
-
-    private fun buildAssetViewUrl(server: String, assetId: String): String =
-        server.removeSuffix("/") + "/photos/$assetId"
-
-    class FavoriteReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val assetId = intent.getStringExtra(EXTRA_ASSET_ID) ?: return
-            val prefs = AppPreferences(context)
-            val config = prefs.current()
-
-            if (!config.isConfigured) {
-                Toast.makeText(context, R.string.immich_favorite_error, Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-                try {
-                    val service = ImmichClient.create(
-                        baseUrl = checkNotNull(config.apiBaseUrl),
-                        apiKey = checkNotNull(config.apiKey)
-                    )
-                    service.updateAssets(
-                        UpdateAssetsRequest(
-                            ids = listOf(assetId),
-                            isFavorite = true
-                        )
-                    )
-                    CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, R.string.immich_favorite_success, Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to favorite asset", e)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, R.string.immich_favorite_error, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
         }
     }
 }

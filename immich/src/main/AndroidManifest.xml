@@ -64,16 +64,13 @@
             android:launchMode="singleInstance" />
 
         <receiver
-            android:name="dev.abdus.apps.immich.shortcuts.FavoriteShortcutReceiver"
+            android:name="dev.abdus.apps.immich.shortcuts.FavoriteReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="dev.abdus.apps.immich.ACTION_FAVORITE_CURRENT" />
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name="dev.abdus.apps.immich.provider.ImmichArtProvider$FavoriteReceiver"
-            android:exported="false" />
 
         <provider
             android:name="dev.abdus.apps.immich.provider.ImmichArtProvider"
