@@ -4,7 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import dev.abdus.apps.immich.api.ImmichClient
+import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AlbumSortBy
 import dev.abdus.apps.immich.data.ImmichAlbumMapper
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
@@ -51,12 +51,9 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
                 val oldConfig = _state.value.config
                 _state.value = _state.value.copy(config = config)
 
-                if (config.isConfigured) {
-                    val service = ImmichClient.create(
-                        baseUrl = checkNotNull(config.apiBaseUrl),
-                        apiKey = checkNotNull(config.apiKey),
-                    )
-                    repository = ImmichRepository(service)
+                val client = ImmichClientProvider.fromConfig(config)
+                if (client != null) {
+                    repository = ImmichRepository(client)
                 }
 
                 // Clear cached data if credentials changed
@@ -153,4 +150,3 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 }
-

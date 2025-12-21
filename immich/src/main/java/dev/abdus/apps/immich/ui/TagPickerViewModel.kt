@@ -4,7 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import dev.abdus.apps.immich.api.ImmichClient
+import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
@@ -47,12 +47,9 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
                 val oldConfig = _state.value.config
                 _state.value = _state.value.copy(config = config)
 
-                if (config.isConfigured) {
-                    val service = ImmichClient.create(
-                        baseUrl = checkNotNull(config.apiBaseUrl),
-                        apiKey = config.apiKey!!
-                    )
-                    repository = ImmichRepository(service)
+                val client = ImmichClientProvider.fromConfig(config)
+                if (client != null) {
+                    repository = ImmichRepository(client)
                 }
 
                 // Clear cached data if credentials changed

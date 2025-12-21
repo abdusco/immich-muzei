@@ -13,6 +13,7 @@ import com.google.android.apps.muzei.api.provider.Artwork
 import com.google.android.apps.muzei.api.provider.MuzeiArtProvider
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
+import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import dev.abdus.apps.immich.shortcuts.FavoriteReceiver
@@ -46,10 +47,10 @@ class ImmichArtProvider : MuzeiArtProvider() {
             return
         }
 
-        val immichClient = ImmichClient.create(
-            baseUrl = checkNotNull(config.apiBaseUrl),
-            apiKey = checkNotNull(config.apiKey),
-        )
+        val immichClient = ImmichClientProvider.fromConfig(config) ?: run {
+            Toast.makeText(context, "Immich server is not configured", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         repository = ImmichRepository(immichClient)
 
@@ -135,6 +136,11 @@ class ImmichArtProvider : MuzeiArtProvider() {
             return emptyList()
         }
 
+        val config = AppPreferences(context).current()
+        if (!config.isConfigured) {
+            return emptyList()
+        }
+
         return listOf(
             createOpenInImmichAction(context, artwork),
             createFavoriteAction(context, artwork)
@@ -146,14 +152,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
         val assetId = artwork.token!!
 
         // Add "Open in Immich" action if server is configured
-        val prefs = AppPreferences(context)
-        val config = prefs.current()
-
-
-        val immichClient = ImmichClient.create(
-            baseUrl = checkNotNull(config.apiBaseUrl),
-            apiKey = checkNotNull(config.apiKey)
-        )
+        val immichClient = checkNotNull(getClient(context))
         val uri = immichClient.buildAssetViewUrl(assetId).toUri()
 
         val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -180,15 +179,6 @@ class ImmichArtProvider : MuzeiArtProvider() {
     private fun createFavoriteAction(context: Context, artwork: Artwork): RemoteActionCompat {
         val assetId = artwork.token!!
 
-        // Add "Open in Immich" action if server is configured
-        val prefs = AppPreferences(context)
-        val config = prefs.current()
-
-        val immichClient = ImmichClient.create(
-            baseUrl = checkNotNull(config.apiBaseUrl),
-            apiKey = checkNotNull(config.apiKey)
-        )
-
         val intent = Intent(context, FavoriteReceiver::class.java).apply {
             putExtra(EXTRA_ASSET_ID, assetId)
         }
@@ -209,5 +199,10 @@ class ImmichArtProvider : MuzeiArtProvider() {
         ).apply {
             setShouldShowIcon(false)
         }
+    }
+
+    private fun getClient(context: Context): ImmichClient? {
+        val config = AppPreferences(context).current()
+        return ImmichClientProvider.fromConfig(config)
     }
 }
