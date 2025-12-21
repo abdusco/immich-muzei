@@ -94,7 +94,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
                     tagIds = tagIds,
                     favoritesOnly = config.favoritesOnly,
                     createdAfter = createdAfterIso,
-                    createdBefore = config.createdBefore
+                    createdBefore = null
                 )
 
                 if (assets.isEmpty()) {

@@ -17,8 +17,6 @@ private const val KEY_SELECTED_ALBUM = "selected_album"  // Deprecated, kept for
 private const val KEY_SELECTED_ALBUMS = "selected_albums"  // New: multiple albums
 private const val KEY_SELECTED_TAGS = "selected_tags"
 private const val KEY_FAVORITES_ONLY = "favorites_only"
-private const val KEY_CREATED_AFTER = "created_after"
-private const val KEY_CREATED_BEFORE = "created_before"
 private const val KEY_FILTER_DAYS_BACK = "filter_days_back"  // New: store days-back directly
 private const val KEY_LAST_ALBUM_INDEX = "last_album_index"  // Round-robin tracking
 private const val KEY_CACHED_ALBUMS = "cached_albums_json"  // Cached album metadata
@@ -55,18 +53,6 @@ class AppPreferences(context: Context) {
 
     fun updateFavoritesOnly(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_FAVORITES_ONLY, enabled) }
-    }
-
-    fun updateCreatedAfter(value: String?) {
-        prefs.edit {
-            if (value == null) remove(KEY_CREATED_AFTER) else putString(KEY_CREATED_AFTER, value)
-        }
-    }
-
-    fun updateCreatedBefore(value: String?) {
-        prefs.edit {
-            if (value == null) remove(KEY_CREATED_BEFORE) else putString(KEY_CREATED_BEFORE, value)
-        }
     }
 
     fun updateFilterDaysBack(days: Int?) {
@@ -166,10 +152,9 @@ data class ImmichConfig(
     val selectedAlbumIds: Set<String> = emptySet(),
     val selectedTagIds: Set<String> = emptySet(),
     val favoritesOnly: Boolean = false,
-    val createdBefore: String? = null,
     // persisted days-back value for the Taken-at slider (e.g. 7 = last week)
     val filterPresetDaysBack: Int? = null
- ) {
+) {
     val isConfigured: Boolean get() = !serverUrl.isNullOrBlank() && !apiKey.isNullOrBlank()
     val apiBaseUrl: String?
         get() = serverUrl?.let { base ->
