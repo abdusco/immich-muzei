@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.abdus.apps.immich.ui.screens.AlbumPickerScreen
 
@@ -22,9 +21,7 @@ class AlbumPickerActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
-                val imageLoader = remember(this) {
-                    ImmichImageLoader.create(this)
-                }
+                val imageLoader = ImmichImageLoaderProvider.get(this)
                 AlbumPickerScreen(
                     state = state,
                     imageLoader = imageLoader,
@@ -38,4 +35,3 @@ class AlbumPickerActivity : ComponentActivity() {
         }
     }
 }
-

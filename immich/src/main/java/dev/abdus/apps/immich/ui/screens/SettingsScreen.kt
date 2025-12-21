@@ -59,7 +59,7 @@ import dev.abdus.apps.immich.data.ImmichTagUiModel
 import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.ui.AlbumPickerActivity
 import dev.abdus.apps.immich.ui.ConfigActivity
-import dev.abdus.apps.immich.ui.ImmichImageLoader
+import dev.abdus.apps.immich.ui.ImmichImageLoaderProvider
 import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
 
@@ -69,7 +69,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val imageLoader = remember(context) { ImmichImageLoader.create(context) }
+    val imageLoader = remember(context) { ImmichImageLoaderProvider.get(context) }
 
     // Check if Immich is the active Muzei source
     val isImmichActive = remember { mutableStateOf(true) }
