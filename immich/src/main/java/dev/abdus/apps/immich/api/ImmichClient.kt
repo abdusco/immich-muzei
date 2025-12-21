@@ -46,7 +46,7 @@ class ImmichClient private constructor(
     }
 
     fun buildAssetThumbnailUrl(assetId: String): String {
-        return "${baseUrl}assets/$assetId/thumbnail&apiKey=$apiKey"
+        return "${baseUrl}assets/$assetId/thumbnail?size=thumbnail&apiKey=$apiKey"
     }
 
     fun buildAssetViewUrl(assetId: String): String {

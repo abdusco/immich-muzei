@@ -7,7 +7,6 @@ import android.widget.Toast
 import com.google.android.apps.muzei.api.createChooseProviderIntent
 import com.google.android.apps.muzei.api.isSelected
 import com.google.android.apps.muzei.api.provider.ProviderContract
-import dev.abdus.apps.immich.BuildConfig
 
 /**
  * Navigation helper for launching Muzei-related flows.
@@ -19,7 +18,7 @@ class MuzeiNavigator(private val context: Context) {
 
     fun isImmichActiveSource(): Boolean {
         return try {
-            val client = ProviderContract.getProviderClient(context, BuildConfig.IMMICH_AUTHORITY)
+            val client = ProviderContract.getProviderClient(context, ImmichAuthorities.IMMICH_AUTHORITY)
             val isActive = client.isSelected(context)
             Log.d(TAG, "Immich provider selected: $isActive")
             isActive
@@ -51,7 +50,7 @@ class MuzeiNavigator(private val context: Context) {
     private fun createChooseProviderIntent(): Intent? {
         return try {
             ProviderContract
-                .getProviderClient(context, BuildConfig.IMMICH_AUTHORITY)
+                .getProviderClient(context, ImmichAuthorities.IMMICH_AUTHORITY)
                 .createChooseProviderIntent()
         } catch (e: Exception) {
             Log.e(TAG, "Error creating choose provider intent", e)

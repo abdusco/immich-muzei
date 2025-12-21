@@ -30,12 +30,13 @@ class ImmichRepository(private val client: ImmichClient) {
         tagIds: List<String>?,
         favoritesOnly: Boolean = false,
         createdAfter: String? = null,
-        createdBefore: String? = null
+        createdBefore: String? = null,
+        size: Int = 10
     ): List<ImmichAsset> = withContext(Dispatchers.IO) {
         val request = SearchRandomRequest(
             albumIds = albumIds,
             tagIds = tagIds,
-            size = 10,
+            size = size,
             isFavorite = if (favoritesOnly) true else null,
             createdAfter = createdAfter,
             createdBefore = createdBefore

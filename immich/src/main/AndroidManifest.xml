@@ -74,7 +74,7 @@
 
         <provider
             android:name="dev.abdus.apps.immich.provider.ImmichArtProvider"
-            android:authorities="${immichAuthority}"
+            android:authorities="dev.abdus.apps.immich"
             android:description="@string/description"
             android:exported="true"
             android:label="@string/name"
@@ -93,8 +93,8 @@
         </provider>
 
         <provider
-            android:name="com.google.android.apps.muzei.api.provider.MuzeiArtDocumentsProvider"
-            android:authorities="${immichAuthority}.documents"
+            android:name="dev.abdus.apps.immich.provider.ImmichRandomAssetProvider"
+            android:authorities="dev.abdus.apps.immich.documents"
             android:exported="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">
