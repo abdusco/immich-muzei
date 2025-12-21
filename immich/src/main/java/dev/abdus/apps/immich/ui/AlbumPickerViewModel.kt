@@ -11,7 +11,7 @@ import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
-import dev.abdus.apps.immich.provider.MuzeiProvider
+import dev.abdus.apps.immich.provider.ArtworkStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +30,7 @@ data class AlbumPickerUiState(
 class AlbumPickerViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = AppPreferences(application)
     private lateinit var repository: ImmichRepository
-    private val muzeiProvider = MuzeiProvider(application)
+    private val artworkStore = ArtworkStore(application)
 
     private val _state = MutableStateFlow(AlbumPickerUiState())
     val state: StateFlow<AlbumPickerUiState> = _state
@@ -103,7 +103,7 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
     private fun clearPhotos() {
         Log.d(TAG, "Clearing all photos")
         viewModelScope.launch {
-            muzeiProvider.clearPhotos()
+            artworkStore.clearAll()
         }
     }
 

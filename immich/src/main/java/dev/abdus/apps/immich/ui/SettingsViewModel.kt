@@ -9,7 +9,8 @@ import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichUiState
-import dev.abdus.apps.immich.provider.MuzeiProvider
+import dev.abdus.apps.immich.provider.ArtworkStore
+import dev.abdus.apps.immich.provider.MuzeiNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ import kotlinx.coroutines.withContext
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = AppPreferences(application)
-    private val muzeiProvider = MuzeiProvider(application)
+    private val artworkStore = ArtworkStore(application)
+    private val muzeiNavigator = MuzeiNavigator(application)
 
     private val _state = MutableStateFlow(ImmichUiState())
     val state: StateFlow<ImmichUiState> = _state
@@ -91,7 +93,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 // perform clearing on IO
                 withContext(Dispatchers.IO) {
-                    muzeiProvider.clearPhotos()
+                    artworkStore.clearAll()
                 }
                 // notify user on main thread
                 withContext(Dispatchers.Main) {
@@ -134,28 +136,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Returns true if Immich is active, false otherwise.
      */
     fun isImmichActiveSource(): Boolean {
-        return muzeiProvider.isImmichActiveSource()
+        return muzeiNavigator.isImmichActiveSource()
     }
 
     fun launchChooseMuzeiSource(context: Context) {
-        val intents = listOf(
-            muzeiProvider.createChooseProviderIntent(),
-            context.packageManager.getLaunchIntentForPackage("net.nurik.roman.muzei")
-        ).filter { it != null }
-
-        for (intent in intents) {
-            try {
-                context.startActivity(intent)
-                return
-            } catch (e: Exception) {
-                Log.e(TAG, "Could not open Muzei with intent: $intent", e)
-                continue
-            }
-        }
-
-        Log.e(TAG, "Could not open Muzei app or provider chooser with any intent")
-
-        Toast.makeText(context, "Could not open Muzei app.", Toast.LENGTH_LONG).show()
+        muzeiNavigator.launchChooseMuzeiSource(context)
     }
 
 
