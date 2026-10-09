@@ -107,11 +107,9 @@ class ImmichClient private constructor(
 @Serializable
 data class SearchRandomRequest(
     val size: Int = 10,
-    // Only images: the provider and Muzei can't display videos.
-    val type: String? = "IMAGE",
+    val isFavorite: Boolean? = null,
     // Include exifInfo (file size) in the response so no per-asset request is needed.
     val withExif: Boolean? = true,
-    val isFavorite: Boolean? = null,
     // Filter assets created after this timestamp (ISO-8601 string expected by the API)
     val createdAfter: String? = null,
     val filter: SearchFilterRequest? = null
@@ -120,7 +118,15 @@ data class SearchRandomRequest(
 @Serializable
 data class SearchFilterRequest(
     val albumIds: IdsFilterRequest? = null,
-    val tagIds: IdsFilterRequest? = null
+    val tagIds: IdsFilterRequest? = null,
+    // Only images: the provider and Muzei can't display videos. The top-level `type`
+    // is deprecated in v3.2 and rejected (HTTP 400) when combined with `filter`.
+    val type: TypeFilterRequest? = TypeFilterRequest(eq = "IMAGE")
+)
+
+@Serializable
+data class TypeFilterRequest(
+    val eq: String? = null
 )
 
 @Serializable

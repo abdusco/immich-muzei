@@ -45,11 +45,7 @@ class ImmichRepository(private val client: ImmichClient) {
             createdAfter = config.filterPresetDaysBack?.let {
                 LocalDate.now().minusDays(it.toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE)
             },
-            filter = if (albumFilter != null || tagFilter != null) {
-                SearchFilterRequest(albumIds = albumFilter, tagIds = tagFilter)
-            } else {
-                null
-            }
+            filter = SearchFilterRequest(albumIds = albumFilter, tagIds = tagFilter)
         )
         return client.getRandomAssets(request)
     }
