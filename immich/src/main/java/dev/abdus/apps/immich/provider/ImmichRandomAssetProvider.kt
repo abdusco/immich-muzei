@@ -136,7 +136,6 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
                         Document.COLUMN_DOCUMENT_ID ->
                             buildDocumentId(asset.id, asset.originalFileName)
                         Document.COLUMN_DISPLAY_NAME -> asset.originalFileName ?: asset.id
-                        Document.COLUMN_SUMMARY -> asset.albumId
                         Document.COLUMN_MIME_TYPE -> "image/*"
                         Document.COLUMN_FLAGS -> Document.FLAG_SUPPORTS_THUMBNAIL
                         Document.COLUMN_SIZE -> null

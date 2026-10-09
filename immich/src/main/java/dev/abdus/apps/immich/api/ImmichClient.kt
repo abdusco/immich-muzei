@@ -46,10 +46,6 @@ class ImmichClient private constructor(
         return "${baseUrl}assets/$assetId/original?apiKey=$apiKey"
     }
 
-    fun buildAssetPreviewUrl(assetId: String): String {
-        return "${baseUrl}assets/$assetId/thumbnail?size=preview&apiKey=$apiKey"
-    }
-
     fun buildAssetThumbnailUrl(assetId: String): String {
         return "${baseUrl}assets/$assetId/thumbnail?size=thumbnail&apiKey=$apiKey"
     }
@@ -101,8 +97,6 @@ data class SearchRandomRequest(
     val isFavorite: Boolean? = null,
     // Filter assets created after this timestamp (ISO-8601 string expected by the API)
     val createdAfter: String? = null,
-    // Filter assets created before this timestamp (ISO-8601 string expected by the API)
-    val createdBefore: String? = null,
     val filter: SearchFilterRequest? = null
 )
 
@@ -154,7 +148,6 @@ data class ImmichAlbum(
     val id: String,
     val albumName: String,
     val albumThumbnailAssetId: String?,
-    var albumThumbnailAssetThumbnailUrl: String?,
     val assetCount: Int,
     val updatedAt: String? = null,
     val lastModifiedAssetTimestamp: String? = null
@@ -163,25 +156,16 @@ data class ImmichAlbum(
 @Serializable
 data class ImmichTag(
     val id: String,
-    val name: String,
-    val value: String
+    val name: String
 )
 
 @Serializable
 data class ImmichAsset(
     val id: String,
-    val albumId: String? = null,
     val originalFileName: String? = null,
-    val originalMimeType: String? = null,
-    val ownerId: String? = null,
-    val resized: Boolean? = null,
-    val originalPath: String,
     val fileCreatedAt: String? = null,
     val width: Int? = null,
     val height: Int? = null,
-    var downloadUrl: String? = null,
-    var previewUrl: String? = null,
-    var viewUrl: String? = null,
 ) {
     fun createdDate(): String {
         return fileCreatedAt?.substringBefore('T') ?: "Unknown"

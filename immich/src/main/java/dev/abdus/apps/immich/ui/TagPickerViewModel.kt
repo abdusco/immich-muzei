@@ -91,14 +91,7 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 Log.d(TAG, "Loading tags from ${config.apiBaseUrl}")
 
-                val tags = repository.fetchTags()
-                Log.d(TAG, "Fetched ${tags.size} tags")
-                val uiTags = tags.map { tag ->
-                    ImmichTagUiModel(
-                        id = tag.id,
-                        name = tag.name
-                    )
-                }
+                val uiTags = repository.fetchTags()
 
                 prefs.saveCachedTags(uiTags)
                 Log.d(TAG, "Cached ${uiTags.size} tags")

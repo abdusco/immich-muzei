@@ -1,13 +1,10 @@
 package dev.abdus.apps.immich.data
 
 import dev.abdus.apps.immich.api.IdsFilterRequest
-import dev.abdus.apps.immich.api.ImmichAlbum
 import dev.abdus.apps.immich.api.ImmichAsset
 import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.api.SearchFilterRequest
 import dev.abdus.apps.immich.api.SearchRandomRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -17,18 +14,20 @@ class ImmichRepository(private val client: ImmichClient) {
         const val MAX_RANDOM_ASSETS = 1000
     }
 
-    suspend fun fetchAlbums(): List<ImmichAlbum> {
-        val result = withContext(Dispatchers.IO) { client.getAlbums() }
-        return result.map {
-            if (it.albumThumbnailAssetId != null) {
-               it.albumThumbnailAssetThumbnailUrl = client.buildAssetThumbnailUrl(it.albumThumbnailAssetId)
-            }
-            it
+    suspend fun fetchAlbums(): List<ImmichAlbumUiModel> =
+        client.getAlbums().map { album ->
+            ImmichAlbumUiModel(
+                id = album.id,
+                title = album.albumName,
+                coverUrl = album.albumThumbnailAssetId?.let(client::buildAssetThumbnailUrl),
+                assetCount = album.assetCount,
+                updatedAt = album.updatedAt,
+                lastModifiedAssetTimestamp = album.lastModifiedAssetTimestamp
+            )
         }
-    }
 
-    suspend fun fetchTags(): List<dev.abdus.apps.immich.api.ImmichTag> =
-        withContext(Dispatchers.IO) { client.getTags() }
+    suspend fun fetchTags(): List<ImmichTagUiModel> =
+        client.getTags().map { ImmichTagUiModel(id = it.id, name = it.name) }
 
     /**
      * Random assets matching the configured filters. Empty album/tag selections mean no filter;
@@ -37,7 +36,7 @@ class ImmichRepository(private val client: ImmichClient) {
     suspend fun fetchRandomAssets(
         config: ImmichConfig,
         size: Int = MAX_RANDOM_ASSETS
-    ): List<ImmichAsset> = withContext(Dispatchers.IO) {
+    ): List<ImmichAsset> {
         val albumFilter = config.selectedAlbumIds.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it.toList()) }
         val tagFilter = config.selectedTagIds.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it.toList()) }
         val request = SearchRandomRequest(
@@ -52,12 +51,6 @@ class ImmichRepository(private val client: ImmichClient) {
                 null
             }
         )
-        val result = client.getRandomAssets(request)
-        result.map {
-            it.downloadUrl = client.buildAssetDownloadUrl(it.id)
-            it.previewUrl = client.buildAssetPreviewUrl(it.id)
-            it.viewUrl = client.buildAssetViewUrl(it.id)
-            it
-        }
+        return client.getRandomAssets(request)
     }
 }

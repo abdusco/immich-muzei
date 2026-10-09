@@ -41,8 +41,8 @@ object ArtworkSync {
                 title = asset.originalFileName,
                 byline = asset.createdDate(),
                 attribution = asset.id,
-                persistentUri = asset.downloadUrl?.toUri(),
-                webUri = asset.viewUrl?.toUri(),
+                persistentUri = client.buildAssetDownloadUrl(asset.id).toUri(),
+                webUri = client.buildAssetViewUrl(asset.id).toUri(),
             )
         }
 

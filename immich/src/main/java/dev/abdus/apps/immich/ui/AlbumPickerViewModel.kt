@@ -6,7 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AlbumSortBy
-import dev.abdus.apps.immich.data.ImmichAlbumMapper
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.AppPreferences
@@ -116,11 +115,7 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
         loadJob = viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
             try {
-                val albums = repository.fetchAlbums()
-                val uiAlbums = albums.map { album ->
-                    val mapped = ImmichAlbumMapper.toUiModel(album, config.serverUrl!!, config.apiKey!!)
-                    mapped
-                }
+                val uiAlbums = repository.fetchAlbums()
 
                 prefs.saveCachedAlbums(uiAlbums)
 
