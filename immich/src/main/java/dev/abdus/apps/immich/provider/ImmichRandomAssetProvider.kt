@@ -168,7 +168,7 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
         val context = context ?: return null
         val assetId = parseAssetId(documentId) ?: return null
         val fileStore = ImmichAssetFileStore(context)
-        val file = fileStore.safeGetOrDownload(assetId, thumbnail = false) ?: return null
+        val file = fileStore.safeGetOrDownload(assetId, thumbnail = false, signal = signal) ?: return null
         return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     }
 
@@ -180,7 +180,7 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
         val context = context ?: return null
         val assetId = parseAssetId(documentId) ?: return null
         val fileStore = ImmichAssetFileStore(context)
-        val file = fileStore.safeGetOrDownload(assetId, thumbnail = true) ?: return null
+        val file = fileStore.safeGetOrDownload(assetId, thumbnail = true, signal = signal) ?: return null
         val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
         return android.content.res.AssetFileDescriptor(pfd, 0, android.content.res.AssetFileDescriptor.UNKNOWN_LENGTH)
     }
