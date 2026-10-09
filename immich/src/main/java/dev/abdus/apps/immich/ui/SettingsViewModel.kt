@@ -8,74 +8,43 @@ import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.api.ImmichMinServerVersion
 import dev.abdus.apps.immich.data.AppPreferences
-import dev.abdus.apps.immich.data.ImmichUiState
+import dev.abdus.apps.immich.data.ImmichAlbumUiModel
+import dev.abdus.apps.immich.data.ImmichConfig
+import dev.abdus.apps.immich.data.ImmichTagUiModel
 import dev.abdus.apps.immich.provider.MuzeiNavigator
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+
+data class SettingsUiState(
+    val config: ImmichConfig,
+    val albums: List<ImmichAlbumUiModel>,
+    val tags: List<ImmichTagUiModel>
+)
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = AppPreferences(application)
     private val muzeiNavigator = MuzeiNavigator(application)
 
-    private val _state = MutableStateFlow(ImmichUiState())
-    val state: StateFlow<ImmichUiState> = _state
+    // Album/tag metadata is cached in prefs by the pickers, so any pref change refreshes it here.
+    val state: StateFlow<SettingsUiState> = prefs.changes
+        .map { readState() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), readState())
+
+    private fun readState() = SettingsUiState(prefs.current(), prefs.getCachedAlbums(), prefs.getCachedTags())
 
     companion object {
         private const val TAG = "ImmichSettingsVM"
         private val prettyJson = kotlinx.serialization.json.Json { prettyPrint = true }
     }
 
-    init {
-        // Load cached data immediately
-        loadCachedData()
-
-        viewModelScope.launch {
-            prefs.configFlow.collectLatest { config ->
-                Log.d(TAG, "Config changed: serverUrl=${config.serverUrl}, hasApiKey=${!config.apiKey.isNullOrBlank()}")
-                val oldConfig = _state.value.config
-                _state.value = _state.value.copy(config = config)
-
-                // Clear cached data if credentials changed
-                if (config.serverUrl != oldConfig.serverUrl || config.apiKey != oldConfig.apiKey) {
-                    if (!config.isConfigured) {
-                        _state.value = _state.value.copy(
-                            albums = emptyList(),
-                            tags = emptyList()
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private fun loadCachedData() {
-        val cachedAlbums = prefs.getCachedAlbums()
-        val cachedTags = prefs.getCachedTags()
-        Log.d(TAG, "Loaded ${cachedAlbums.size} cached albums and ${cachedTags.size} cached tags")
-        _state.value = _state.value.copy(
-            albums = cachedAlbums,
-            tags = cachedTags
-        )
-    }
-
-    /**
-     * Reload cached data from preferences. Called when returning from picker screens.
-     */
-    fun reloadCachedData() {
-        loadCachedData()
-    }
-
-    fun updateCredentials(serverUrl: String, apiKey: String) {
-        Log.d(TAG, "Updating credentials: serverUrl=$serverUrl")
-        prefs.updateServer(serverUrl, apiKey)
-    }
-
     fun toggleFavoritesOnly() {
-        val newValue = !_state.value.config.favoritesOnly
-        Log.d(TAG, "Toggling favorites only: $newValue")
-        prefs.updateFavoritesOnly(newValue)
+        prefs.updateFavoritesOnly(!state.value.config.favoritesOnly)
+    }
+
+    fun updateFilterDaysBack(days: Int?) {
+        prefs.updateFilterDaysBack(days)
     }
 
     /**
@@ -113,7 +82,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 "Please upgrade your Immich server to ${ImmichMinServerVersion.label()} or later."
         }
 
-        updateCredentials(serverUrl, apiKey)
+        prefs.updateServer(serverUrl, apiKey)
         return null
     }
 
@@ -127,21 +96,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         return if (baseUrl.endsWith('/')) baseUrl else "$baseUrl/"
     }
 
-    /**
-     * Check if Immich is currently the active Muzei source.
-     * Returns true if Immich is active, false otherwise.
-     */
     fun isImmichActiveSource(): Boolean {
         return muzeiNavigator.isImmichActiveSource()
     }
 
     fun launchChooseMuzeiSource(context: Context) {
         muzeiNavigator.launchChooseMuzeiSource(context)
-    }
-
-
-    fun updateFilterDaysBack(days: Int?) {
-        Log.d(TAG, "Updating filter days-back: $days")
-        prefs.updateFilterDaysBack(days)
     }
 }

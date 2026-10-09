@@ -44,9 +44,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import dev.abdus.apps.immich.data.AlbumSortBy
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.ui.AlbumPickerUiState
+import dev.abdus.apps.immich.ui.AlbumSortBy
 
 private fun AlbumSortBy.label(): String = when (this) {
     AlbumSortBy.NAME -> "Name"

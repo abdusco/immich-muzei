@@ -33,7 +33,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -73,10 +72,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
-import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.ui.AlbumPickerActivity
 import dev.abdus.apps.immich.ui.ConfigActivity
 import dev.abdus.apps.immich.ui.ImmichImageLoaderProvider
+import dev.abdus.apps.immich.ui.SettingsUiState
 import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
 
@@ -140,7 +139,7 @@ fun SettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ImmichContent(
-    state: ImmichUiState,
+    state: SettingsUiState,
     isImmichActive: Boolean,
     imageLoader: ImageLoader,
     onChangeAlbum: () -> Unit,
@@ -166,18 +165,6 @@ private fun ImmichContent(
             )
         }
     ) { paddingValues ->
-        if (state.isLoading) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -193,16 +180,6 @@ private fun ImmichContent(
                         action = "Change source",
                         onAction = { onLaunchChooseProvider(context) },
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                    )
-                }
-            }
-
-            state.errorMessage?.let { message ->
-                item {
-                    NoticeCard(
-                        title = "Something went wrong",
-                        body = message,
-                        containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 }
             }

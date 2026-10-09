@@ -26,7 +26,10 @@ class AppPreferences(context: Context) {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    val configFlow: Flow<ImmichConfig> = prefs.onChangeFlow()
+    /** Emits once on collection and again whenever any preference changes. */
+    val changes: Flow<Unit> = prefs.onChangeFlow()
+
+    val configFlow: Flow<ImmichConfig> = changes
         .map { readConfig() }
         .distinctUntilChanged()
 

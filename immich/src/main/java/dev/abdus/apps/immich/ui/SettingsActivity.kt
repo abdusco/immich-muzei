@@ -25,10 +25,4 @@ class SettingsActivity : ComponentActivity() {
             }
         }
     }
-
-    override fun onResume() {
-        super.onResume()
-        // Reload cached data when returning from picker activities
-        viewModel.reloadCachedData()
-    }
 }

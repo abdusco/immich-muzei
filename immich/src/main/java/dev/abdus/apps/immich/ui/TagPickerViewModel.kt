@@ -5,28 +5,27 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichClientProvider
-import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.AppPreferences
+import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.ImmichRepository
 import dev.abdus.apps.immich.data.ImmichTagUiModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class TagPickerUiState(
-    val config: ImmichConfig = ImmichConfig(null, null, emptySet(), emptySet(), false),
-    val tags: List<ImmichTagUiModel> = emptyList(),
+    val config: ImmichConfig,
+    val tags: List<ImmichTagUiModel>,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
 
 class TagPickerViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = AppPreferences(application)
-    private lateinit var repository: ImmichRepository
 
-    private val _state = MutableStateFlow(TagPickerUiState())
+    private val _state = MutableStateFlow(TagPickerUiState(prefs.current(), prefs.getCachedTags()))
     val state: StateFlow<TagPickerUiState> = _state
 
     private var loadJob: Job? = null
@@ -36,78 +35,29 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     init {
-        // Load cached data immediately
-        loadCachedData()
-
         viewModelScope.launch {
-            prefs.configFlow.collectLatest { config ->
-                Log.d(TAG, "Config changed: serverUrl=${config.serverUrl}, hasApiKey=${!config.apiKey.isNullOrBlank()}")
-                val oldConfig = _state.value.config
-                _state.value = _state.value.copy(config = config)
-
-                val client = ImmichClientProvider.fromConfig(config)
-                if (client != null) {
-                    repository = ImmichRepository(client)
-                }
-
-                // Clear cached data if credentials changed
-                if (config.serverUrl != oldConfig.serverUrl || config.apiKey != oldConfig.apiKey) {
-                    if (!config.isConfigured) {
-                        _state.value = _state.value.copy(tags = emptyList())
-                    }
-                }
-            }
+            prefs.configFlow.collect { config -> _state.update { it.copy(config = config) } }
         }
-    }
-
-    private fun loadCachedData() {
-        val cachedTags = prefs.getCachedTags()
-        Log.d(TAG, "Loaded ${cachedTags.size} cached tags")
-        _state.value = _state.value.copy(tags = cachedTags)
     }
 
     fun refreshFromApi() {
-        val config = _state.value.config
-        if (!config.isConfigured) return
-        if (!::repository.isInitialized) return // Add a check here
-        loadTags()
+        val client = ImmichClientProvider.fromConfig(prefs.current()) ?: return
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                val tags = ImmichRepository(client).fetchTags()
+                prefs.saveCachedTags(tags)
+                _state.update { it.copy(tags = tags, isLoading = false) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading tags", e)
+                _state.update { it.copy(isLoading = false, errorMessage = e.message) }
+            }
+        }
     }
 
     fun toggleTag(id: String) {
-        val currentSelection = _state.value.config.selectedTagIds
-        val newSelection = currentSelection.toMutableSet().apply {
-            if (!add(id)) remove(id)
-        }
-        Log.d(TAG, "Toggling tag $id, new selection size: ${newSelection.size}")
-        prefs.updateSelectedTags(newSelection)
-    }
-
-    private fun loadTags() {
-        val config = _state.value.config
-        if (!config.isConfigured) return
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-            try {
-                Log.d(TAG, "Loading tags from ${config.apiBaseUrl}")
-
-                val uiTags = repository.fetchTags()
-
-                prefs.saveCachedTags(uiTags)
-                Log.d(TAG, "Cached ${uiTags.size} tags")
-
-                _state.value = _state.value.copy(
-                    tags = uiTags,
-                    isLoading = false,
-                    errorMessage = null
-                )
-            } catch (t: Throwable) {
-                Log.e(TAG, "Error loading tags", t)
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    errorMessage = t.message
-                )
-            }
-        }
+        val selection = _state.value.config.selectedTagIds
+        prefs.updateSelectedTags(if (id in selection) selection - id else selection + id)
     }
 }
