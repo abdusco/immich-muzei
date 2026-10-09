@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.abdus.apps.immich.api.ImmichClient
+import dev.abdus.apps.immich.api.ImmichMinServerVersion
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichUiState
 import dev.abdus.apps.immich.provider.ArtworkStore
@@ -111,16 +112,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     suspend fun testCredentials(serverUrl: String, apiKey: String): String {
         return try {
-            val normalizedUrl = serverUrl.trim().removeSuffix("/")
-            val baseUrl = if (normalizedUrl.endsWith("/api")) {
-                normalizedUrl
-            } else {
-                "$normalizedUrl/api"
-            }
-            val finalUrl = if (baseUrl.endsWith('/')) baseUrl else "$baseUrl/"
-
-            Log.d(TAG, "Testing credentials with URL: $finalUrl")
-            val service = ImmichClient.create(finalUrl, apiKey.trim())
+            val service = ImmichClient.create(normalizeBaseUrl(serverUrl), apiKey.trim())
             val response = service.getServerInfo()
 
             // Prettify JSON response
@@ -129,6 +121,38 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Log.e(TAG, "Error testing credentials", e)
             "Error: ${e.message ?: e.javaClass.simpleName}\n\n${e.stackTraceToString()}"
         }
+    }
+
+    /**
+     * Verifies the server meets the minimum supported version before saving credentials.
+     * Returns an error message to show the user, or null on success (credentials are saved).
+     */
+    suspend fun verifyAndSaveCredentials(serverUrl: String, apiKey: String): String? {
+        val service = ImmichClient.create(normalizeBaseUrl(serverUrl), apiKey.trim())
+        val version = try {
+            service.getServerVersion()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking server version", e)
+            return "Could not connect to server: ${e.message ?: e.javaClass.simpleName}"
+        }
+
+        if (!ImmichMinServerVersion.isSupported(version)) {
+            return "Server version v${version.major}.${version.minor}.${version.patch} is not supported. " +
+                "Please upgrade your Immich server to ${ImmichMinServerVersion.label()} or later."
+        }
+
+        updateCredentials(serverUrl, apiKey)
+        return null
+    }
+
+    private fun normalizeBaseUrl(serverUrl: String): String {
+        val normalizedUrl = serverUrl.trim().removeSuffix("/")
+        val baseUrl = if (normalizedUrl.endsWith("/api")) {
+            normalizedUrl
+        } else {
+            "$normalizedUrl/api"
+        }
+        return if (baseUrl.endsWith('/')) baseUrl else "$baseUrl/"
     }
 
     /**

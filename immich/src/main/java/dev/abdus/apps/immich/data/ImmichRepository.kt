@@ -1,8 +1,10 @@
 package dev.abdus.apps.immich.data
 
+import dev.abdus.apps.immich.api.IdsFilterRequest
 import dev.abdus.apps.immich.api.ImmichAlbum
 import dev.abdus.apps.immich.api.ImmichAsset
 import dev.abdus.apps.immich.api.ImmichClient
+import dev.abdus.apps.immich.api.SearchFilterRequest
 import dev.abdus.apps.immich.api.SearchRandomRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,13 +35,18 @@ class ImmichRepository(private val client: ImmichClient) {
         createdBefore: String? = null,
         size: Int = 10
     ): List<ImmichAsset> = withContext(Dispatchers.IO) {
+        val albumFilter = albumIds?.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it) }
+        val tagFilter = tagIds?.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it) }
         val request = SearchRandomRequest(
-            albumIds = albumIds,
-            tagIds = tagIds,
             size = size,
             isFavorite = if (favoritesOnly) true else null,
             createdAfter = createdAfter,
-            createdBefore = createdBefore
+            createdBefore = createdBefore,
+            filter = if (albumFilter != null || tagFilter != null) {
+                SearchFilterRequest(albumIds = albumFilter, tagIds = tagFilter)
+            } else {
+                null
+            }
         )
         val result = client.getRandomAssets(request)
         result.map {

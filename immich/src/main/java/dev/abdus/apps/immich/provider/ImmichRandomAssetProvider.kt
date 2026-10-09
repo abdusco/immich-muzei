@@ -132,15 +132,7 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
         val config = prefs.current()
         val client = ImmichClientProvider.fromConfig(config) ?: return cursor
         val repository = ImmichRepository(client)
-        val selectedAlbumIds = config.selectedAlbumIds.toList()
-        val albumIds = when {
-            selectedAlbumIds.isEmpty() -> null
-            selectedAlbumIds.size == 1 -> selectedAlbumIds
-            else -> {
-                val index = prefs.getNextAlbumIndex(selectedAlbumIds.size)
-                listOf(selectedAlbumIds[index])
-            }
-        }
+        val albumIds = config.selectedAlbumIds.toList().ifEmpty { null }
         val tagIds = config.selectedTagIds.toList().ifEmpty { null }
         val createdAfterIso: String? = config.filterPresetDaysBack?.let { days ->
             try {

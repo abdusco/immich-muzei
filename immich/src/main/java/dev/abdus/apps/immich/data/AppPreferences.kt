@@ -18,7 +18,6 @@ private const val KEY_SELECTED_ALBUMS = "selected_albums"  // New: multiple albu
 private const val KEY_SELECTED_TAGS = "selected_tags"
 private const val KEY_FAVORITES_ONLY = "favorites_only"
 private const val KEY_FILTER_DAYS_BACK = "filter_days_back"  // New: store days-back directly
-private const val KEY_LAST_ALBUM_INDEX = "last_album_index"  // Round-robin tracking
 private const val KEY_CACHED_ALBUMS = "cached_albums_json"  // Cached album metadata
 private const val KEY_CACHED_TAGS = "cached_tags_json"  // Cached tag metadata
 
@@ -40,11 +39,7 @@ class AppPreferences(context: Context) {
     }
 
     fun updateSelectedAlbums(ids: Set<String>) {
-        prefs.edit {
-            putStringSet(KEY_SELECTED_ALBUMS, ids)
-            // Reset round-robin index when selection changes
-            putInt(KEY_LAST_ALBUM_INDEX, 0)
-        }
+        prefs.edit { putStringSet(KEY_SELECTED_ALBUMS, ids) }
     }
 
     fun updateSelectedTags(ids: Set<String>) {
@@ -59,19 +54,6 @@ class AppPreferences(context: Context) {
         prefs.edit {
             if (days == null) remove(KEY_FILTER_DAYS_BACK) else putInt(KEY_FILTER_DAYS_BACK, days)
         }
-    }
-
-    /**
-     * Get the next album index for round-robin selection.
-     * Returns the current index and increments it for next time.
-     */
-    fun getNextAlbumIndex(totalAlbums: Int): Int {
-        if (totalAlbums <= 0) return 0
-
-        val current = prefs.getInt(KEY_LAST_ALBUM_INDEX, 0)
-        val next = (current + 1) % totalAlbums
-        prefs.edit { putInt(KEY_LAST_ALBUM_INDEX, next) }
-        return current
     }
 
     /**

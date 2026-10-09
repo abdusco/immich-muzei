@@ -45,13 +45,15 @@ fun ConfigScreen(
     serverUrl: String,
     apiKey: String,
     onBack: () -> Unit,
-    onSave: (String, String) -> Unit,
+    onSave: suspend (String, String) -> String?,
     onTest: suspend (String, String) -> String
 ) {
     val (url, setUrl) = remember { mutableStateOf(serverUrl) }
     val (key, setKey) = remember { mutableStateOf(apiKey) }
     val (testResult, setTestResult) = remember { mutableStateOf<String?>(null) }
     val (isTesting, setIsTesting) = remember { mutableStateOf(false) }
+    val (isSaving, setIsSaving) = remember { mutableStateOf(false) }
+    val (saveError, setSaveError) = remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -118,10 +120,25 @@ fun ConfigScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { onSave(url, key) },
-                                modifier = Modifier.weight(1f)
+                                onClick = {
+                                    scope.launch {
+                                        setIsSaving(true)
+                                        setSaveError(null)
+                                        val error = onSave(url, key)
+                                        setIsSaving(false)
+                                        setSaveError(error)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                enabled = !isSaving && !isTesting && url.isNotBlank() && key.isNotBlank()
                             ) {
-                                Text("Save")
+                                if (isSaving) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.height(20.dp)
+                                    )
+                                } else {
+                                    Text("Save")
+                                }
                             }
                             OutlinedButton(
                                 onClick = {
@@ -134,7 +151,7 @@ fun ConfigScreen(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                enabled = !isTesting && url.isNotBlank() && key.isNotBlank()
+                                enabled = !isTesting && !isSaving && url.isNotBlank() && key.isNotBlank()
                             ) {
                                 if (isTesting) {
                                     CircularProgressIndicator(
@@ -144,6 +161,14 @@ fun ConfigScreen(
                                     Text("Test")
                                 }
                             }
+                        }
+
+                        if (saveError != null) {
+                            Text(
+                                text = saveError,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 }

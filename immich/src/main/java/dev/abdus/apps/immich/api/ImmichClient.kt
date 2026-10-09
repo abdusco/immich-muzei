@@ -19,6 +19,9 @@ interface ImmichApi {
     @GET("server/about")
     suspend fun getServerInfo(): kotlinx.serialization.json.JsonObject
 
+    @GET("server/version")
+    suspend fun getServerVersion(): ServerVersionResponseDto
+
     @GET("albums")
     suspend fun getAlbums(): List<ImmichAlbum>
 
@@ -85,15 +88,50 @@ class ImmichClient private constructor(
 
 @Serializable
 data class SearchRandomRequest(
-    val albumIds: List<String>? = null,
-    val tagIds: List<String>? = null,
     val size: Int = 10,
     val isFavorite: Boolean? = null,
     // Filter assets created after this timestamp (ISO-8601 string expected by the API)
     val createdAfter: String? = null,
     // Filter assets created before this timestamp (ISO-8601 string expected by the API)
-    val createdBefore: String? = null
+    val createdBefore: String? = null,
+    val filter: SearchFilterRequest? = null
 )
+
+@Serializable
+data class SearchFilterRequest(
+    val albumIds: IdsFilterRequest? = null,
+    val tagIds: IdsFilterRequest? = null
+)
+
+@Serializable
+data class IdsFilterRequest(
+    val any: List<String>? = null
+)
+
+@Serializable
+data class ServerVersionResponseDto(
+    val major: Int,
+    val minor: Int,
+    val patch: Int
+)
+
+/**
+ * Minimum Immich server version this client targets. Versions older than this
+ * don't expose `filter.albumIds.any` (added in v3.2.0), so they aren't supported.
+ */
+object ImmichMinServerVersion {
+    const val MAJOR = 3
+    const val MINOR = 2
+    const val PATCH = 0
+
+    fun isSupported(version: ServerVersionResponseDto): Boolean {
+        if (version.major != MAJOR) return version.major > MAJOR
+        if (version.minor != MINOR) return version.minor > MINOR
+        return version.patch >= PATCH
+    }
+
+    fun label(): String = "v$MAJOR.$MINOR.$PATCH"
+}
 
 @Serializable
 data class UpdateAssetsRequest(

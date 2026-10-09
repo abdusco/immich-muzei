@@ -54,27 +54,9 @@ class ImmichArtProvider : MuzeiArtProvider() {
 
         repository = ImmichRepository(immichClient)
 
-        // Determine which album(s) to fetch from based on selection
-        val selectedAlbumIds = config.selectedAlbumIds.toList()
-        val albumIds = when {
-            selectedAlbumIds.isEmpty() -> {
-                // No albums selected = use all albums
-                null
-            }
-
-            selectedAlbumIds.size == 1 -> {
-                // Single album = use it directly
-                selectedAlbumIds
-            }
-
-            else -> {
-                // Multiple albums = round-robin
-                val index = prefs.getNextAlbumIndex(selectedAlbumIds.size)
-                val currentAlbum = selectedAlbumIds[index]
-                Log.d(TAG, "Round-robin: album ${index + 1}/${selectedAlbumIds.size}: $currentAlbum")
-                listOf(currentAlbum)
-            }
-        }
+        // Fetch from all selected albums at once (server filters with OR semantics).
+        // Empty selection means no album filter = use all albums.
+        val albumIds = config.selectedAlbumIds.toList().ifEmpty { null }
 
         val tagIds = config.selectedTagIds.toList().ifEmpty { null }
         // Include advanced filters for taken-at if configured

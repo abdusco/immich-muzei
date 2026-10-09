@@ -22,9 +22,12 @@ class ConfigActivity : ComponentActivity() {
                     apiKey = state.config.apiKey ?: "",
                     onBack = { finish() },
                     onSave = { url, key ->
-                        viewModel.updateCredentials(url, key)
-                        setResult(RESULT_OK)
-                        finish()
+                        val error = viewModel.verifyAndSaveCredentials(url, key)
+                        if (error == null) {
+                            setResult(RESULT_OK)
+                            finish()
+                        }
+                        error
                     },
                     onTest = viewModel::testCredentials
                 )
