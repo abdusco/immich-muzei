@@ -10,6 +10,7 @@ import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
+import android.provider.MediaStore
 import android.net.Uri
 import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AppPreferences
@@ -166,6 +167,9 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
                         Document.COLUMN_MIME_TYPE -> "image/*"
                         Document.COLUMN_FLAGS -> Document.FLAG_SUPPORTS_THUMBNAIL
                         Document.COLUMN_SIZE -> null
+                        // Not part of the SAF contract; served to clients that request them.
+                        MediaStore.MediaColumns.WIDTH -> asset.width
+                        MediaStore.MediaColumns.HEIGHT -> asset.height
                         else -> null
                     }
                 )

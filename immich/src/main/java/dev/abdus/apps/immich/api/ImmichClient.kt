@@ -168,6 +168,8 @@ data class ImmichAsset(
     val resized: Boolean? = null,
     val originalPath: String,
     val fileCreatedAt: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
     var downloadUrl: String? = null,
     var previewUrl: String? = null,
     var viewUrl: String? = null,
