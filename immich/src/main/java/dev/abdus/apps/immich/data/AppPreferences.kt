@@ -13,11 +13,10 @@ import androidx.core.content.edit
 private const val PREFS_NAME = "immich_prefs"
 private const val KEY_SERVER_URL = "server_url"
 private const val KEY_API_KEY = "api_key"
-private const val KEY_SELECTED_ALBUM = "selected_album"  // Deprecated, kept for migration
-private const val KEY_SELECTED_ALBUMS = "selected_albums"  // New: multiple albums
+private const val KEY_SELECTED_ALBUMS = "selected_albums"
 private const val KEY_SELECTED_TAGS = "selected_tags"
 private const val KEY_FAVORITES_ONLY = "favorites_only"
-private const val KEY_FILTER_DAYS_BACK = "filter_days_back"  // New: store days-back directly
+private const val KEY_FILTER_DAYS_BACK = "filter_days_back"
 private const val KEY_CACHED_ALBUMS = "cached_albums_json"  // Cached album metadata
 private const val KEY_CACHED_TAGS = "cached_tags_json"  // Cached tag metadata
 private const val KEY_LOADED_ARTWORK_FILTER = "loaded_artwork_filter"
@@ -105,34 +104,14 @@ class AppPreferences(context: Context) {
         }
     }
 
-    private fun readConfig(): ImmichConfig {
-        // Migration: if old single album key exists, migrate to new format
-        val oldAlbumId = prefs.getString(KEY_SELECTED_ALBUM, null)
-        val newAlbums = prefs.getStringSet(KEY_SELECTED_ALBUMS, null)
-
-        val selectedAlbums = when {
-            newAlbums != null -> newAlbums
-            oldAlbumId != null -> {
-                // Migrate old single album to new format
-                val albums = setOf(oldAlbumId)
-                prefs.edit {
-                    putStringSet(KEY_SELECTED_ALBUMS, albums)
-                    remove(KEY_SELECTED_ALBUM)  // Clean up old key
-                }
-                albums
-            }
-            else -> emptySet()
-        }
-
-        return ImmichConfig(
-             serverUrl = prefs.getString(KEY_SERVER_URL, null)?.normalizeUrl(),
-             apiKey = prefs.getString(KEY_API_KEY, null)?.trim().orEmpty().ifBlank { null },
-             selectedAlbumIds = selectedAlbums,
-             selectedTagIds = prefs.getStringSet(KEY_SELECTED_TAGS, emptySet()) ?: emptySet(),
-             favoritesOnly = prefs.getBoolean(KEY_FAVORITES_ONLY, false),
-             filterPresetDaysBack = prefs.getInt(KEY_FILTER_DAYS_BACK, -1).let { if (it == -1) null else it }
-         )
-     }
+    private fun readConfig(): ImmichConfig = ImmichConfig(
+        serverUrl = prefs.getString(KEY_SERVER_URL, null)?.normalizeUrl(),
+        apiKey = prefs.getString(KEY_API_KEY, null)?.trim().orEmpty().ifBlank { null },
+        selectedAlbumIds = prefs.getStringSet(KEY_SELECTED_ALBUMS, null).orEmpty(),
+        selectedTagIds = prefs.getStringSet(KEY_SELECTED_TAGS, null).orEmpty(),
+        favoritesOnly = prefs.getBoolean(KEY_FAVORITES_ONLY, false),
+        filterPresetDaysBack = prefs.getInt(KEY_FILTER_DAYS_BACK, -1).takeIf { it != -1 }
+    )
 
     private fun String.normalizeUrl(): String = trim().removeSuffix("/")
 }
