@@ -9,7 +9,6 @@ import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import dev.abdus.apps.immich.data.ImmichTagUiModel
-import dev.abdus.apps.immich.provider.ArtworkStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +25,6 @@ data class TagPickerUiState(
 class TagPickerViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = AppPreferences(application)
     private lateinit var repository: ImmichRepository
-    private val artworkStore = ArtworkStore(application)
 
     private val _state = MutableStateFlow(TagPickerUiState())
     val state: StateFlow<TagPickerUiState> = _state
@@ -82,14 +80,6 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
         }
         Log.d(TAG, "Toggling tag $id, new selection size: ${newSelection.size}")
         prefs.updateSelectedTags(newSelection)
-        clearPhotos()
-    }
-
-    private fun clearPhotos() {
-        Log.d(TAG, "Clearing all photos")
-        viewModelScope.launch {
-            artworkStore.clearAll()
-        }
     }
 
     private fun loadTags() {

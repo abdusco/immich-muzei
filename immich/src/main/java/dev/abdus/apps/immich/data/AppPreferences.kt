@@ -20,6 +20,7 @@ private const val KEY_FAVORITES_ONLY = "favorites_only"
 private const val KEY_FILTER_DAYS_BACK = "filter_days_back"  // New: store days-back directly
 private const val KEY_CACHED_ALBUMS = "cached_albums_json"  // Cached album metadata
 private const val KEY_CACHED_TAGS = "cached_tags_json"  // Cached tag metadata
+private const val KEY_LOADED_ARTWORK_FILTER = "loaded_artwork_filter"
 
 class AppPreferences(context: Context) {
     private val prefs: SharedPreferences =
@@ -55,6 +56,11 @@ class AppPreferences(context: Context) {
             if (days == null) remove(KEY_FILTER_DAYS_BACK) else putInt(KEY_FILTER_DAYS_BACK, days)
         }
     }
+
+    /** [ImmichConfig.artworkFilterKey] of the filters Muzei's artwork queue was last loaded with. */
+    var loadedArtworkFilterKey: String?
+        get() = prefs.getString(KEY_LOADED_ARTWORK_FILTER, null)
+        set(value) = prefs.edit { putString(KEY_LOADED_ARTWORK_FILTER, value) }
 
     /**
      * Save album metadata for local caching
@@ -138,6 +144,16 @@ data class ImmichConfig(
     val filterPresetDaysBack: Int? = null
 ) {
     val isConfigured: Boolean get() = !serverUrl.isNullOrBlank() && !apiKey.isNullOrBlank()
+
+    /** Changes whenever the set of photos to show changes. */
+    val artworkFilterKey: String
+        get() = listOf(
+            serverUrl,
+            selectedAlbumIds.sorted(),
+            selectedTagIds.sorted(),
+            favoritesOnly,
+            filterPresetDaysBack
+        ).toString()
     val apiBaseUrl: String?
         get() = serverUrl?.let { base ->
             val withApi = if (base.endsWith("/api")) base else "$base/api"

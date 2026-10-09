@@ -11,7 +11,6 @@ import dev.abdus.apps.immich.data.ImmichAlbumUiModel
 import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
-import dev.abdus.apps.immich.provider.ArtworkStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +29,6 @@ data class AlbumPickerUiState(
 class AlbumPickerViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = AppPreferences(application)
     private lateinit var repository: ImmichRepository
-    private val artworkStore = ArtworkStore(application)
 
     private val _state = MutableStateFlow(AlbumPickerUiState())
     val state: StateFlow<AlbumPickerUiState> = _state
@@ -87,7 +85,6 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
         }
         Log.d(TAG, "Toggling album $id, new selection size: ${newSelection.size}")
         prefs.updateSelectedAlbums(newSelection)
-        clearPhotos()
     }
 
     fun setSortBy(sortBy: AlbumSortBy) {
@@ -98,13 +95,6 @@ class AlbumPickerViewModel(application: Application) : AndroidViewModel(applicat
     fun toggleSortReversed() {
         _state.value = _state.value.copy(sortReversed = !_state.value.sortReversed)
         applySorting()
-    }
-
-    private fun clearPhotos() {
-        Log.d(TAG, "Clearing all photos")
-        viewModelScope.launch {
-            artworkStore.clearAll()
-        }
     }
 
     private fun applySorting() {

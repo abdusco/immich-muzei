@@ -93,6 +93,7 @@ dependencies {
     implementation libs.lifecycle.viewmodel
     implementation libs.lifecycle.runtime
     implementation libs.lifecycle.livedata
+    implementation libs.lifecycle.process
     implementation libs.coroutines.android
     implementation libs.retrofit.core
     implementation libs.okhttp.core

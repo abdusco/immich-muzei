@@ -24,10 +24,8 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -36,12 +34,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -136,7 +131,6 @@ fun SettingsScreen(
         onChangeAlbum = { context.startActivity(Intent(context, AlbumPickerActivity::class.java)) },
         onChangeTags = { context.startActivity(Intent(context, TagPickerActivity::class.java)) },
         onEditConfig = openConfig,
-        onClearPhotos = viewModel::clearPhotos,
         onToggleFavoritesOnly = viewModel::toggleFavoritesOnly,
         onCreatedAfterChanged = viewModel::updateFilterDaysBack,
         onLaunchChooseProvider = viewModel::launchChooseMuzeiSource
@@ -152,14 +146,12 @@ private fun ImmichContent(
     onChangeAlbum: () -> Unit,
     onChangeTags: () -> Unit,
     onEditConfig: () -> Unit,
-    onClearPhotos: () -> Unit,
     onToggleFavoritesOnly: () -> Unit,
     onCreatedAfterChanged: (Int?) -> Unit,
     onLaunchChooseProvider: (Context) -> Unit
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    var menuExpanded by remember { mutableStateOf(false) }
     var showDateDialog by remember { mutableStateOf(false) }
 
     val selectedAlbums = state.albums.filter { it.id in state.config.selectedAlbumIds }
@@ -170,27 +162,7 @@ private fun ImmichContent(
         topBar = {
             LargeTopAppBar(
                 title = { Text("Immich") },
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    Box {
-                        IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                        }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Clear photos") },
-                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onClearPhotos()
-                                }
-                            )
-                        }
-                    }
-                }
+                scrollBehavior = scrollBehavior
             )
         }
     ) { paddingValues ->

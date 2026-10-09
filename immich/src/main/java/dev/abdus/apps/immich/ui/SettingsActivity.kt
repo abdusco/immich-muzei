@@ -31,10 +31,4 @@ class SettingsActivity : ComponentActivity() {
         // Reload cached data when returning from picker activities
         viewModel.reloadCachedData()
     }
-
-    override fun onPause() {
-        super.onPause()
-        // Apply pending changes (clears photos once) when leaving settings
-        viewModel.applyPendingChangesIfAny()
-    }
 }
