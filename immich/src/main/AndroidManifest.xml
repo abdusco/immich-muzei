@@ -10,7 +10,7 @@
         <activity
             android:name="dev.abdus.apps.immich.ui.SettingsActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Material.NoActionBar">
+            android:theme="@style/Theme.Immich">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -25,19 +25,19 @@
         <activity
             android:name="dev.abdus.apps.immich.ui.AlbumPickerActivity"
             android:exported="false"
-            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:theme="@style/Theme.Immich"
             android:parentActivityName="dev.abdus.apps.immich.ui.SettingsActivity" />
 
         <activity
             android:name="dev.abdus.apps.immich.ui.TagPickerActivity"
             android:exported="false"
-            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:theme="@style/Theme.Immich"
             android:parentActivityName="dev.abdus.apps.immich.ui.SettingsActivity" />
 
         <activity
             android:name="dev.abdus.apps.immich.ui.ConfigActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:theme="@style/Theme.Immich"
             android:parentActivityName="dev.abdus.apps.immich.ui.SettingsActivity" />
 
         <activity

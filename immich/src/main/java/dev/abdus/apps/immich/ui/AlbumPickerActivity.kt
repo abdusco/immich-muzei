@@ -3,8 +3,8 @@ package dev.abdus.apps.immich.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.abdus.apps.immich.ui.screens.AlbumPickerScreen
@@ -14,12 +14,13 @@ class AlbumPickerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         // Refresh albums from API when picker is opened
         viewModel.refreshFromApi()
 
         setContent {
-            MaterialTheme {
+            ImmichTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
                 val imageLoader = ImmichImageLoaderProvider.get(this)
                 AlbumPickerScreen(
