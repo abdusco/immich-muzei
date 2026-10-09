@@ -8,10 +8,13 @@ import dev.abdus.apps.immich.api.SearchFilterRequest
 import dev.abdus.apps.immich.api.SearchRandomRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class ImmichRepository(private val client: ImmichClient) {
     companion object {
-        private const val TAG = "ImmichRepository"
+        // Immich's /search/random "size" accepts at most 1000 results per request.
+        const val MAX_RANDOM_ASSETS = 1000
     }
 
     suspend fun fetchAlbums(): List<ImmichAlbum> {
@@ -27,21 +30,22 @@ class ImmichRepository(private val client: ImmichClient) {
     suspend fun fetchTags(): List<dev.abdus.apps.immich.api.ImmichTag> =
         withContext(Dispatchers.IO) { client.getTags() }
 
+    /**
+     * Random assets matching the configured filters. Empty album/tag selections mean no filter;
+     * multiple selections match any of them.
+     */
     suspend fun fetchRandomAssets(
-        albumIds: List<String>?,
-        tagIds: List<String>?,
-        favoritesOnly: Boolean = false,
-        createdAfter: String? = null,
-        createdBefore: String? = null,
-        size: Int = 10
+        config: ImmichConfig,
+        size: Int = MAX_RANDOM_ASSETS
     ): List<ImmichAsset> = withContext(Dispatchers.IO) {
-        val albumFilter = albumIds?.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it) }
-        val tagFilter = tagIds?.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it) }
+        val albumFilter = config.selectedAlbumIds.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it.toList()) }
+        val tagFilter = config.selectedTagIds.takeIf { it.isNotEmpty() }?.let { IdsFilterRequest(any = it.toList()) }
         val request = SearchRandomRequest(
             size = size,
-            isFavorite = if (favoritesOnly) true else null,
-            createdAfter = createdAfter,
-            createdBefore = createdBefore,
+            isFavorite = if (config.favoritesOnly) true else null,
+            createdAfter = config.filterPresetDaysBack?.let {
+                LocalDate.now().minusDays(it.toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE)
+            },
             filter = if (albumFilter != null || tagFilter != null) {
                 SearchFilterRequest(albumIds = albumFilter, tagIds = tagFilter)
             } else {

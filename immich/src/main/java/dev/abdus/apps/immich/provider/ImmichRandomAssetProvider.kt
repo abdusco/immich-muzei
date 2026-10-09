@@ -16,16 +16,10 @@ import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import kotlinx.coroutines.runBlocking
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 class ImmichRandomAssetProvider : DocumentsProvider() {
     companion object {
-        private const val TAG = "ImmichRandomAssetProvider"
         private const val ROOT_ID = "dev.abdus.apps.immich.documents"
-        // Immich's /search/random "size" accepts at most 1000 results per request.
-        private const val DEFAULT_LIMIT = 1000
-        private const val MAX_LIMIT = 1000
     }
 
     override fun onCreate(): Boolean = true
@@ -130,30 +124,9 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
         val context = context ?: return cursor
 
         val limit = parseLimit(queryArgs)
-        val prefs = AppPreferences(context)
-        val config = prefs.current()
+        val config = AppPreferences(context).current()
         val client = ImmichClientProvider.fromConfig(config) ?: return cursor
-        val repository = ImmichRepository(client)
-        val albumIds = config.selectedAlbumIds.toList().ifEmpty { null }
-        val tagIds = config.selectedTagIds.toList().ifEmpty { null }
-        val createdAfterIso: String? = config.filterPresetDaysBack?.let { days ->
-            try {
-                LocalDate.now().minusDays(days.toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE)
-            } catch (_: Exception) {
-                null
-            }
-        }
-
-        val assets = runBlocking {
-            repository.fetchRandomAssets(
-                albumIds = albumIds,
-                tagIds = tagIds,
-                favoritesOnly = config.favoritesOnly,
-                createdAfter = createdAfterIso,
-                createdBefore = null,
-                size = limit
-            )
-        }
+        val assets = runBlocking { ImmichRepository(client).fetchRandomAssets(config, limit) }
 
         assets.forEach { asset ->
             val row = cursor.newRow()
@@ -220,13 +193,9 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
     }
 
     private fun parseLimit(args: Bundle?): Int {
-        if (args == null) return DEFAULT_LIMIT
-        val limit = if (args.containsKey(ContentResolver.QUERY_ARG_LIMIT)) {
-            args.getInt(ContentResolver.QUERY_ARG_LIMIT)
-        } else {
-            DEFAULT_LIMIT
-        }
-        return limit.coerceIn(1, MAX_LIMIT)
+        val max = ImmichRepository.MAX_RANDOM_ASSETS
+        if (args == null || !args.containsKey(ContentResolver.QUERY_ARG_LIMIT)) return max
+        return args.getInt(ContentResolver.QUERY_ARG_LIMIT).coerceIn(1, max)
     }
 
     private fun parseDisplayName(documentId: String): String? {

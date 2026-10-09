@@ -10,8 +10,6 @@ import com.google.android.apps.muzei.api.provider.ProviderContract
 import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 /**
  * Keeps Muzei's artwork queue in line with the current filters. The filters the queue was loaded
@@ -19,8 +17,6 @@ import java.time.format.DateTimeFormatter
  */
 object ArtworkSync {
     private const val TAG = "ArtworkSync"
-    // Immich's /search/random "size" accepts at most 1000 results per request.
-    private const val MAX_API_SIZE = 1000
 
     /** Fetches a batch of photos and adds it to the queue, or replaces the queue if the filters changed. */
     suspend fun load(context: Context, provider: ProviderClient) {
@@ -29,15 +25,7 @@ object ArtworkSync {
         val client = ImmichClientProvider.fromConfig(config) ?: return
 
         val assets = try {
-            ImmichRepository(client).fetchRandomAssets(
-                albumIds = config.selectedAlbumIds.toList(),
-                tagIds = config.selectedTagIds.toList(),
-                favoritesOnly = config.favoritesOnly,
-                createdAfter = config.filterPresetDaysBack?.let {
-                    LocalDate.now().minusDays(it.toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                },
-                size = MAX_API_SIZE
-            )
+            ImmichRepository(client).fetchRandomAssets(config)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to fetch artwork", e)
             return
