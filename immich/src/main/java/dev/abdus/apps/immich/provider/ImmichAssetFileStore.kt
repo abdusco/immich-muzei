@@ -8,6 +8,7 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ConcurrentHashMap
 import okhttp3.Request
 
 class ImmichAssetFileStore(private val context: Context) {
@@ -18,6 +19,9 @@ class ImmichAssetFileStore(private val context: Context) {
 
         // Bump to wipe the cache once on upgrade (older versions could leave truncated files).
         private const val CACHE_VERSION = 1
+
+        // One lock per (asset, variant); entries are tiny, so they are never evicted.
+        private val locks = ConcurrentHashMap<String, Any>()
     }
 
     fun getOrDownload(assetId: String, thumbnail: Boolean): File {
@@ -27,7 +31,9 @@ class ImmichAssetFileStore(private val context: Context) {
 
         if (cacheFile.exists()) return cacheFile
 
-        downloadAsset(assetId, cacheFile, thumbnail)
+        synchronized(locks.getOrPut(cacheFile.name) { Any() }) {
+            if (!cacheFile.exists()) downloadAsset(assetId, cacheFile, thumbnail)
+        }
         return cacheFile
     }
 
