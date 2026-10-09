@@ -33,6 +33,8 @@ class ImmichArtProvider : MuzeiArtProvider() {
     companion object {
         private const val TAG = "ImmichArtProvider"
         private const val EXTRA_ASSET_ID = "asset_id"
+        // Immich's /search/random "size" accepts at most 1000 results per request.
+        private const val MAX_API_SIZE = 1000
     }
 
     override fun onLoadRequested(initial: Boolean) {
@@ -76,14 +78,14 @@ class ImmichArtProvider : MuzeiArtProvider() {
                     tagIds = tagIds,
                     favoritesOnly = config.favoritesOnly,
                     createdAfter = createdAfterIso,
-                    createdBefore = null
+                    createdBefore = null,
+                    size = MAX_API_SIZE
                 )
 
                 if (assets.isEmpty()) {
                     return@launch
                 }
 
-                val MAX_ARTWORKS = minOf(assets.size, 6)
                 val artworks = assets.map { asset ->
                     Artwork(
                         token = asset.id,
@@ -93,7 +95,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
                         persistentUri = asset.downloadUrl?.toUri(),
                         webUri = asset.viewUrl?.toUri(),
                     )
-                }.take(MAX_ARTWORKS)
+                }
 
                 val addedUris = addArtwork(artworks)
                 Log.d(TAG, "Added ${addedUris.size} artwork URIs")

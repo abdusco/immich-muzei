@@ -22,8 +22,9 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
     companion object {
         private const val TAG = "ImmichRandomAssetProvider"
         private const val ROOT_ID = "dev.abdus.apps.immich.documents"
-        private const val DEFAULT_LIMIT = 6
-        private const val MAX_LIMIT = 200
+        // Immich's /search/random "size" accepts at most 1000 results per request.
+        private const val DEFAULT_LIMIT = 1000
+        private const val MAX_LIMIT = 1000
     }
 
     override fun onCreate(): Boolean = true
