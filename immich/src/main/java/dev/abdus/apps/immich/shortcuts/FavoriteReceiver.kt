@@ -7,9 +7,9 @@ import android.util.Log
 import com.google.android.apps.muzei.api.MuzeiContract
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
-import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.api.UpdateAssetsRequest
 import dev.abdus.apps.immich.data.AppPreferences
+import dev.abdus.apps.immich.provider.ImmichArtProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 class FavoriteReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "FavoriteReceiver"
-        private const val IMMICH_AUTHORITY = "dev.abdus.apps.immich"
 
         const val ACTION_FAVORITE_CURRENT = "dev.abdus.apps.immich.ACTION_FAVORITE_CURRENT"
         const val ACTION_ASSET_FAVORITED = "dev.abdus.apps.immich.ACTION_ASSET_FAVORITED"
@@ -42,7 +41,7 @@ class FavoriteReceiver : BroadcastReceiver() {
 
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val client = getClient(context) ?: run {
+                val client = ImmichClient.fromConfig(AppPreferences(context).current()) ?: run {
                     showToast(context, context.getString(R.string.immich_favorite_error))
                     return@launch
                 }
@@ -68,7 +67,7 @@ class FavoriteReceiver : BroadcastReceiver() {
             return
         }
 
-        if (artwork.providerAuthority != IMMICH_AUTHORITY) {
+        if (artwork.providerAuthority != ImmichArtProvider.AUTHORITY) {
             showToast(context, "Current wallpaper is not from Immich")
             return
         }
@@ -80,11 +79,6 @@ class FavoriteReceiver : BroadcastReceiver() {
         }
 
         return favoriteAssetId(context, assetId, artwork.title)
-    }
-
-    private fun getClient(context: Context): ImmichClient? {
-        val config = AppPreferences(context).current()
-        return ImmichClientProvider.fromConfig(config)
     }
 
     private fun broadcastFavorited(context: Context, assetId: String, downloadUrl: String, title: String? = null) {

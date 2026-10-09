@@ -12,7 +12,7 @@ import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
 import android.provider.MediaStore
 import android.net.Uri
-import dev.abdus.apps.immich.api.ImmichClientProvider
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 import kotlinx.coroutines.runBlocking
@@ -125,7 +125,7 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
 
         val limit = parseLimit(queryArgs)
         val config = AppPreferences(context).current()
-        val client = ImmichClientProvider.fromConfig(config) ?: return cursor
+        val client = ImmichClient.fromConfig(config) ?: return cursor
         val assets = runBlocking { ImmichRepository(client).fetchRandomAssets(config, limit) }
 
         assets.forEach { asset ->

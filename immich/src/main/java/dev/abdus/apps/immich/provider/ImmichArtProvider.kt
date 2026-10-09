@@ -12,7 +12,6 @@ import com.google.android.apps.muzei.api.provider.Artwork
 import com.google.android.apps.muzei.api.provider.MuzeiArtProvider
 import dev.abdus.apps.immich.R
 import dev.abdus.apps.immich.api.ImmichClient
-import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.shortcuts.FavoriteReceiver
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +23,7 @@ class ImmichArtProvider : MuzeiArtProvider() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
-        private const val EXTRA_ASSET_ID = "asset_id"
+        const val AUTHORITY = "dev.abdus.apps.immich"
     }
 
     override fun onLoadRequested(initial: Boolean) {
@@ -44,30 +43,18 @@ class ImmichArtProvider : MuzeiArtProvider() {
 
     override fun getCommandActions(artwork: Artwork): List<RemoteActionCompat> {
         val context = context ?: return emptyList()
-
-        if (artwork.token.isNullOrEmpty()) {
-            return emptyList()
-        }
-
-        val config = AppPreferences(context).current()
-        if (!config.isConfigured) {
-            return emptyList()
-        }
+        val assetId = artwork.token?.ifEmpty { null } ?: return emptyList()
+        val client = ImmichClient.fromConfig(AppPreferences(context).current()) ?: return emptyList()
 
         return listOf(
-            createOpenInImmichAction(context, artwork),
-            createFavoriteAction(context, artwork)
+            createOpenInImmichAction(context, client, assetId),
+            createFavoriteAction(context, assetId)
         )
     }
 
     @SuppressLint("InlinedApi")
-    private fun createOpenInImmichAction(context: Context, artwork: Artwork): RemoteActionCompat {
-        val assetId = artwork.token!!
-
-        // Add "Open in Immich" action if server is configured
-        val immichClient = checkNotNull(getClient(context))
-        val uri = immichClient.buildAssetViewUrl(assetId).toUri()
-
+    private fun createOpenInImmichAction(context: Context, client: ImmichClient, assetId: String): RemoteActionCompat {
+        val uri = client.buildAssetViewUrl(assetId).toUri()
         val intent = Intent(Intent.ACTION_VIEW, uri)
         val title = context.getString(R.string.immich_action_open)
         return RemoteActionCompat(
@@ -89,11 +76,9 @@ class ImmichArtProvider : MuzeiArtProvider() {
     }
 
     @SuppressLint("InlinedApi")
-    private fun createFavoriteAction(context: Context, artwork: Artwork): RemoteActionCompat {
-        val assetId = artwork.token!!
-
+    private fun createFavoriteAction(context: Context, assetId: String): RemoteActionCompat {
         val intent = Intent(context, FavoriteReceiver::class.java).apply {
-            putExtra(EXTRA_ASSET_ID, assetId)
+            putExtra(FavoriteReceiver.EXTRA_ASSET_ID, assetId)
         }
         val title = context.getString(R.string.immich_action_favorite)
         return RemoteActionCompat(
@@ -112,10 +97,5 @@ class ImmichArtProvider : MuzeiArtProvider() {
         ).apply {
             setShouldShowIcon(false)
         }
-    }
-
-    private fun getClient(context: Context): ImmichClient? {
-        val config = AppPreferences(context).current()
-        return ImmichClientProvider.fromConfig(config)
     }
 }

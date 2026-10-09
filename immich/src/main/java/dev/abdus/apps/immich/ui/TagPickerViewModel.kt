@@ -4,7 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import dev.abdus.apps.immich.api.ImmichClientProvider
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichConfig
 import dev.abdus.apps.immich.data.ImmichRepository
@@ -41,7 +41,7 @@ class TagPickerViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun refreshFromApi() {
-        val client = ImmichClientProvider.fromConfig(prefs.current()) ?: return
+        val client = ImmichClient.fromConfig(prefs.current()) ?: return
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }

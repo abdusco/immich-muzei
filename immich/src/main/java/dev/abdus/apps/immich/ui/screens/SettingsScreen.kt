@@ -1,6 +1,5 @@
 package dev.abdus.apps.immich.ui.screens
 
-import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +47,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,16 +63,16 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import dev.abdus.apps.immich.data.ImmichAlbumUiModel
+import dev.abdus.apps.immich.provider.isImmichSelectedInMuzei
+import dev.abdus.apps.immich.provider.openMuzeiSourcePicker
 import dev.abdus.apps.immich.ui.AlbumPickerActivity
 import dev.abdus.apps.immich.ui.ConfigActivity
-import dev.abdus.apps.immich.ui.ImmichImageLoaderProvider
+import dev.abdus.apps.immich.ui.ImmichImageLoader
 import dev.abdus.apps.immich.ui.SettingsUiState
 import dev.abdus.apps.immich.ui.SettingsViewModel
 import dev.abdus.apps.immich.ui.TagPickerActivity
@@ -99,21 +97,14 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val imageLoader = remember(context) { ImmichImageLoaderProvider.get(context) }
+    val imageLoader = remember(context) { ImmichImageLoader.get(context) }
 
     // Re-check whether Immich is the active Muzei source whenever the screen resumes
     // (including after returning from Muzei)
     var isImmichActive by remember { mutableStateOf(true) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                isImmichActive = viewModel.isImmichActiveSource()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        isImmichActive = viewModel.isImmichActiveSource()
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    LifecycleResumeEffect(Unit) {
+        isImmichActive = context.isImmichSelectedInMuzei()
+        onPauseOrDispose {}
     }
 
     val openConfig = { context.startActivity(Intent(context, ConfigActivity::class.java)) }
@@ -132,7 +123,7 @@ fun SettingsScreen(
         onEditConfig = openConfig,
         onToggleFavoritesOnly = viewModel::toggleFavoritesOnly,
         onCreatedAfterChanged = viewModel::updateFilterDaysBack,
-        onLaunchChooseProvider = viewModel::launchChooseMuzeiSource
+        onLaunchChooseProvider = context::openMuzeiSourcePicker
     )
 }
 
@@ -147,9 +138,8 @@ private fun ImmichContent(
     onEditConfig: () -> Unit,
     onToggleFavoritesOnly: () -> Unit,
     onCreatedAfterChanged: (Int?) -> Unit,
-    onLaunchChooseProvider: (Context) -> Unit
+    onLaunchChooseProvider: () -> Unit
 ) {
-    val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showDateDialog by remember { mutableStateOf(false) }
 
@@ -178,7 +168,7 @@ private fun ImmichContent(
                         title = "Immich is not your active wallpaper source",
                         body = "Switch your Muzei source to Immich to see photos from your library.",
                         action = "Change source",
-                        onAction = { onLaunchChooseProvider(context) },
+                        onAction = onLaunchChooseProvider,
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
                 }

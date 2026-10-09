@@ -22,7 +22,7 @@ class AlbumPickerActivity : ComponentActivity() {
         setContent {
             ImmichTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
-                val imageLoader = ImmichImageLoaderProvider.get(this)
+                val imageLoader = ImmichImageLoader.get(this)
                 AlbumPickerScreen(
                     state = state,
                     imageLoader = imageLoader,

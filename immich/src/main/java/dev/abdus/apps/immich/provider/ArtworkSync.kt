@@ -7,7 +7,7 @@ import com.google.android.apps.muzei.api.isSelected
 import com.google.android.apps.muzei.api.provider.Artwork
 import com.google.android.apps.muzei.api.provider.ProviderClient
 import com.google.android.apps.muzei.api.provider.ProviderContract
-import dev.abdus.apps.immich.api.ImmichClientProvider
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
 
@@ -22,7 +22,7 @@ object ArtworkSync {
     suspend fun load(context: Context, provider: ProviderClient) {
         val prefs = AppPreferences(context)
         val config = prefs.current()
-        val client = ImmichClientProvider.fromConfig(config) ?: return
+        val client = ImmichClient.fromConfig(config) ?: return
 
         val assets = try {
             ImmichRepository(client).fetchRandomAssets(config)
@@ -62,7 +62,7 @@ object ArtworkSync {
         val prefs = AppPreferences(context)
         if (prefs.loadedArtworkFilterKey == prefs.current().artworkFilterKey) return
 
-        val provider = ProviderContract.getProviderClient(context, ImmichAuthorities.IMMICH_AUTHORITY)
+        val provider = ProviderContract.getProviderClient(context, ImmichArtProvider.AUTHORITY)
         // If Immich isn't the active source, the next onLoadRequested will replace the queue.
         if (!provider.isSelected(context)) return
         load(context, provider)

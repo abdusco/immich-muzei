@@ -3,7 +3,6 @@ package dev.abdus.apps.immich.provider
 import android.content.Context
 import android.util.Log
 import dev.abdus.apps.immich.api.ImmichClient
-import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AppPreferences
 import java.io.File
 import java.io.IOException
@@ -27,7 +26,7 @@ class ImmichAssetFileStore(private val context: Context) {
 
     private fun downloadAsset(assetId: String, targetFile: File, thumbnail: Boolean) {
         val config = AppPreferences(context).current()
-        val client = ImmichClientProvider.fromConfig(config) ?: throw IOException("Not configured")
+        val client = ImmichClient.fromConfig(config) ?: throw IOException("Not configured")
 
         val url = if (thumbnail) {
             client.buildAssetThumbnailUrl(assetId)

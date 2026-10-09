@@ -2,6 +2,7 @@ package dev.abdus.apps.immich.api
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dev.abdus.apps.immich.BuildConfig
+import dev.abdus.apps.immich.data.ImmichConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
@@ -60,6 +61,18 @@ class ImmichClient private constructor(
          * Derived clients via [OkHttpClient.newBuilder] share its connection pool and threads.
          */
         val http: OkHttpClient = OkHttpClient()
+
+        @Volatile
+        private var cached: ImmichClient? = null
+
+        /** Client for the configured server, reusing the previous one if server and key are unchanged. */
+        fun fromConfig(config: ImmichConfig): ImmichClient? {
+            if (!config.isConfigured) return null
+            val baseUrl = checkNotNull(config.apiBaseUrl)
+            val apiKey = checkNotNull(config.apiKey)
+            cached?.let { if (it.baseUrl == baseUrl && it.apiKey == apiKey) return it }
+            return create(baseUrl, apiKey).also { cached = it }
+        }
 
         private val json = Json {
             ignoreUnknownKeys = true
