@@ -107,6 +107,8 @@ class ImmichClient private constructor(
 @Serializable
 data class SearchRandomRequest(
     val size: Int = 10,
+    // Only images: the provider and Muzei can't display videos.
+    val type: String? = "IMAGE",
     val isFavorite: Boolean? = null,
     // Filter assets created after this timestamp (ISO-8601 string expected by the API)
     val createdAfter: String? = null,
