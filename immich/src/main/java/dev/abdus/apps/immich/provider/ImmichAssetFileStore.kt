@@ -18,16 +18,24 @@ class ImmichAssetFileStore(private val context: Context) {
         private const val VERSION_MARKER = ".cache_version"
 
         // Bump to wipe the cache once on upgrade (older versions could leave truncated files).
-        private const val CACHE_VERSION = 1
+        private const val CACHE_VERSION = 2
 
         // One lock per (asset, variant); entries are tiny, so they are never evicted.
         private val locks = ConcurrentHashMap<String, Any>()
     }
 
-    fun getOrDownload(assetId: String, thumbnail: Boolean): File {
+    private fun cacheFile(assetId: String, thumbnail: Boolean): File {
         val suffix = if (thumbnail) "thumbnail" else "original"
-        val cacheDir = cacheDir()
-        val cacheFile = File(cacheDir, "immich_${assetId}_$suffix.jpg")
+        // No extension: the real type comes from the document's MIME type, not the file name.
+        return File(cacheDir(), "immich_${assetId}_$suffix")
+    }
+
+    /** The cached original, or null. Never downloads. */
+    fun cachedOriginal(assetId: String): File? =
+        cacheFile(assetId, thumbnail = false).takeIf { it.exists() }
+
+    fun getOrDownload(assetId: String, thumbnail: Boolean): File {
+        val cacheFile = cacheFile(assetId, thumbnail)
 
         if (cacheFile.exists()) return cacheFile
 

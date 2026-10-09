@@ -109,6 +109,8 @@ data class SearchRandomRequest(
     val size: Int = 10,
     // Only images: the provider and Muzei can't display videos.
     val type: String? = "IMAGE",
+    // Include exifInfo (file size) in the response so no per-asset request is needed.
+    val withExif: Boolean? = true,
     val isFavorite: Boolean? = null,
     // Filter assets created after this timestamp (ISO-8601 string expected by the API)
     val createdAfter: String? = null,
@@ -175,12 +177,19 @@ data class ImmichTag(
 )
 
 @Serializable
+data class ImmichExif(
+    val fileSizeInByte: Long? = null
+)
+
+@Serializable
 data class ImmichAsset(
     val id: String,
     val originalFileName: String? = null,
     val fileCreatedAt: String? = null,
     val width: Int? = null,
     val height: Int? = null,
+    val originalMimeType: String? = null,
+    val exifInfo: ImmichExif? = null,
 ) {
     fun createdDate(): String {
         return fileCreatedAt?.substringBefore('T') ?: "Unknown"

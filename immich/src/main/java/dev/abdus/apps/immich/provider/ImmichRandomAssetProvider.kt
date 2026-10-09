@@ -12,6 +12,8 @@ import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
 import android.provider.MediaStore
 import android.net.Uri
+import android.webkit.MimeTypeMap
+import dev.abdus.apps.immich.api.ImmichAsset
 import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.data.AppPreferences
 import dev.abdus.apps.immich.data.ImmichRepository
@@ -74,15 +76,14 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
                         } else {
                             parseDisplayName(documentId) ?: parseAssetId(documentId)
                         }
-                    Document.COLUMN_MIME_TYPE ->
-                        if (documentId == ROOT_ID) Document.MIME_TYPE_DIR else "image/*"
+                    Document.COLUMN_MIME_TYPE -> getDocumentType(documentId)
                     Document.COLUMN_FLAGS ->
                         if (documentId == ROOT_ID) {
                             Document.FLAG_DIR_PREFERS_GRID or Document.FLAG_DIR_PREFERS_LAST_MODIFIED
                         } else {
                             Document.FLAG_SUPPORTS_THUMBNAIL
                         }
-                    Document.COLUMN_SIZE -> null
+                    Document.COLUMN_SIZE -> sizeOf(documentId)
                     else -> null
                 }
             )
@@ -129,16 +130,16 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
         val assets = runBlocking { ImmichRepository(client).fetchRandomAssets(config, limit) }
 
         assets.forEach { asset ->
+            val documentId = buildDocumentId(asset)
             val row = cursor.newRow()
             for (column in columns) {
                 row.add(
                     when (column) {
-                        Document.COLUMN_DOCUMENT_ID ->
-                            buildDocumentId(asset.id, asset.originalFileName)
+                        Document.COLUMN_DOCUMENT_ID -> documentId
                         Document.COLUMN_DISPLAY_NAME -> asset.originalFileName ?: asset.id
-                        Document.COLUMN_MIME_TYPE -> "image/*"
+                        Document.COLUMN_MIME_TYPE -> mimeTypeOf(documentId)
                         Document.COLUMN_FLAGS -> Document.FLAG_SUPPORTS_THUMBNAIL
-                        Document.COLUMN_SIZE -> null
+                        Document.COLUMN_SIZE -> sizeOf(documentId)
                         // Not part of the SAF contract; served to clients that request them.
                         MediaStore.MediaColumns.WIDTH -> asset.width
                         MediaStore.MediaColumns.HEIGHT -> asset.height
@@ -197,35 +198,51 @@ class ImmichRandomAssetProvider : DocumentsProvider() {
         return args.getInt(ContentResolver.QUERY_ARG_LIMIT).coerceIn(1, max)
     }
 
-    private fun parseDisplayName(documentId: String): String? {
+    /** Query params of a document id. Old ids only carry `original_filename`; new ones add `mime` and `size`. */
+    private fun parseParams(documentId: String): Map<String, String> {
         val query = documentId.substringAfter("?", missingDelimiterValue = "")
-        if (query.isBlank()) return null
-        val params = query.split("&")
-        for (param in params) {
+        if (query.isBlank()) return emptyMap()
+        return query.split("&").mapNotNull { param ->
             val parts = param.split("=", limit = 2)
-            if (parts.firstOrNull() == "original_filename") {
-                return parts.getOrNull(1)?.let { Uri.decode(it) }
-            }
-        }
-        return null
+            if (parts.size == 2) parts[0] to Uri.decode(parts[1]) else null
+        }.toMap()
     }
 
-    private fun buildDocumentId(assetId: String, originalFileName: String?): String {
-        val encodedName = originalFileName?.let { Uri.encode(it) }
-        val suffix = if (encodedName.isNullOrBlank()) {
-            ""
-        } else {
-            "?original_filename=$encodedName"
-        }
-        return "$ROOT_ID/$assetId$suffix"
+    private fun parseDisplayName(documentId: String): String? =
+        parseParams(documentId)["original_filename"]
+
+    private fun parseSize(documentId: String): Long? =
+        parseParams(documentId)["size"]?.toLongOrNull()
+
+    /** MIME type from the id, else from the file extension, else a generic image type. No network. */
+    private fun mimeTypeOf(documentId: String): String {
+        val params = parseParams(documentId)
+        params["mime"]?.takeIf { it.isNotBlank() }?.let { return it }
+        val extension = params["original_filename"]?.substringAfterLast('.', "")?.lowercase()
+        extension?.takeIf { it.isNotEmpty() }
+            ?.let { MimeTypeMap.getSingleton().getMimeTypeFromExtension(it) }
+            ?.let { return it }
+        return "image/jpeg"
+    }
+
+    private fun sizeOf(documentId: String): Long? {
+        val assetId = parseAssetId(documentId) ?: return null
+        val context = context ?: return parseSize(documentId)
+        return ImmichAssetFileStore(context).cachedOriginal(assetId)?.length() ?: parseSize(documentId)
+    }
+
+    private fun buildDocumentId(asset: ImmichAsset): String {
+        val params = listOfNotNull(
+            asset.originalFileName?.takeIf { it.isNotBlank() }?.let { "original_filename=${Uri.encode(it)}" },
+            asset.originalMimeType?.takeIf { it.isNotBlank() }?.let { "mime=${Uri.encode(it)}" },
+            asset.exifInfo?.fileSizeInByte?.let { "size=$it" },
+        )
+        val suffix = if (params.isEmpty()) "" else "?" + params.joinToString("&")
+        return "$ROOT_ID/${asset.id}$suffix"
     }
 
     override fun getDocumentType(documentId: String): String {
-        return if (documentId == ROOT_ID) {
-            Document.MIME_TYPE_DIR
-        } else {
-            "image/*"
-        }
+        return if (documentId == ROOT_ID) Document.MIME_TYPE_DIR else mimeTypeOf(documentId)
     }
 
     override fun isChildDocument(parentDocumentId: String, documentId: String): Boolean {
