@@ -7,24 +7,15 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
-import dev.abdus.apps.immich.data.AppPreferences
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
-import okhttp3.Response
+import dev.abdus.apps.immich.api.ImmichClient
 
 class ImmichImageLoader {
     companion object {
+        // Thumbnail URLs carry the API key as a query parameter, so no auth header is needed.
         fun create(context: Context): ImageLoader {
-            val prefs = AppPreferences(context)
-            val config = prefs.current()
-
-            val okHttpClient = OkHttpClient.Builder()
-                .addInterceptor(ImmichHeaderInterceptor(config.apiKey))
-                .build()
-            
             return ImageLoader.Builder(context)
                 .components {
-                    add(OkHttpNetworkFetcherFactory(okHttpClient))
+                    add(OkHttpNetworkFetcherFactory(ImmichClient.http))
                 }
                 .memoryCache {
                     MemoryCache.Builder()
@@ -42,15 +33,3 @@ class ImmichImageLoader {
         }
     }
 }
-
-private class ImmichHeaderInterceptor(private val apiKey: String?) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request().newBuilder().apply {
-            apiKey?.let {
-                addHeader("x-api-key", it)
-            }
-        }.build()
-        return chain.proceed(request)
-    }
-}
-

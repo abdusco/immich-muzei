@@ -1,12 +1,14 @@
 package dev.abdus.apps.immich.api
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import dev.abdus.apps.immich.BuildConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Response
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -57,21 +59,28 @@ class ImmichClient private constructor(
     }
 
     companion object {
+        /**
+         * Shared HTTP client for everything that talks to Immich (API, image loading, downloads).
+         * Derived clients via [OkHttpClient.newBuilder] share its connection pool and threads.
+         */
+        val http: OkHttpClient = OkHttpClient()
+
+        private val json = Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true  // so the size parameter is sent
+            explicitNulls = false
+        }
+
         fun create(baseUrl: String, apiKey: String): ImmichClient {
             val baseUrlClean = baseUrl.trimEnd('/') + "/"
             val apiKeyClean = apiKey.trim()
 
-            val json = Json {
-                ignoreUnknownKeys = true
-                encodeDefaults = true  // Changed to true so size parameter is sent
-                explicitNulls = false
-            }
-            val loggingInterceptor = okhttp3.logging.HttpLoggingInterceptor().apply {
-                level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
-            }
-            val client = OkHttpClient.Builder()
+            val client = http.newBuilder()
                 .addInterceptor(ApiKeyInterceptor(apiKeyClean))
-                .addInterceptor(loggingInterceptor)
+                .apply {
+                    // BASIC logs method, URL and status only; API calls carry the key in a header.
+                    if (BuildConfig.DEBUG) addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
+                }
                 .build()
 
             val retrofitApi = Retrofit.Builder()

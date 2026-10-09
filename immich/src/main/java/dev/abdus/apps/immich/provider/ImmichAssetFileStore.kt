@@ -2,19 +2,17 @@ package dev.abdus.apps.immich.provider
 
 import android.content.Context
 import android.util.Log
+import dev.abdus.apps.immich.api.ImmichClient
 import dev.abdus.apps.immich.api.ImmichClientProvider
 import dev.abdus.apps.immich.data.AppPreferences
 import java.io.File
 import java.io.IOException
-import okhttp3.OkHttpClient
 import okhttp3.Request
 
 class ImmichAssetFileStore(private val context: Context) {
     companion object {
         private const val TAG = "ImmichAssetFileStore"
     }
-
-    private val httpClient = OkHttpClient()
 
     fun getOrDownload(assetId: String, thumbnail: Boolean): File {
         val suffix = if (thumbnail) "thumbnail" else "original"
@@ -38,7 +36,7 @@ class ImmichAssetFileStore(private val context: Context) {
         }
 
         val request = Request.Builder().url(url).build()
-        httpClient.newCall(request).execute().use { response ->
+        ImmichClient.http.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected code $response")
             response.body?.byteStream()?.use { inputStream ->
                 targetFile.outputStream().use { outputStream ->
